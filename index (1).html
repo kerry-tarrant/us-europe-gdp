@@ -1,0 +1,38 @@
+name: Update Data & Deploy
+
+on:
+  schedule:
+    # Runs every April 29th at 8am UTC
+    # IMF WEO is published in mid-April, BEA annual state GDP usually by late March
+    - cron: '0 8 29 4 *'
+  workflow_dispatch: # allow manual trigger too
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fetch latest data and update App.jsx
+        env:
+          BEA_API_KEY: ${{ secrets.BEA_API_KEY }}
+        run: node scripts/fetch-data.js
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
