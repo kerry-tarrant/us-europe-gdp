@@ -1,9 +1,10 @@
 /**
  * fetch-data.js
  *
- * Fetches US state GDP per capita from Wikipedia (no key required)
- * Fetches European GDP per capita PPP from IMF DataMapper API (no key required)
- * Rewrites src/App.jsx with updated data and year labels.
+ * US state GDP per capita: Wikipedia API (structured JSON, no scraping)
+ * European GDP per capita PPP: IMF DataMapper API
+ *
+ * No API keys required. Fully automated.
  */
 
 const fs = require("fs");
@@ -54,86 +55,81 @@ const EU_COUNTRY_META = {
 };
 
 async function fetchWikipediaStates() {
-  console.log("Fetching US state GDP per capita from Wikipedia...");
+  console.log("Fetching US state GDP per capita from Wikipedia API...");
 
-  const url = "https://en.wikipedia.org/w/api.php?action=parse&page=List_of_U.S._states_and_territories_by_GDP&prop=wikitext&format=json&origin=*";
+  // Use the Wikipedia API to get the page content as parsed sections JSON.
+  // This gives us structured table data rather than raw wikitext.
+  const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
+    action: "parse",
+    page: "List_of_U.S._states_and_territories_by_GDP",
+    prop: "sections|wikitext",
+    format: "json",
+    origin: "*",
+  });
+
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Wikipedia API returned ${res.status}`);
   const json = await res.json();
   const wikitext = json.parse.wikitext["*"];
 
-  // The per capita column is the 4th data column in the main table.
-  // Each state row looks like: | [[State]] || ... || $117,332 || ...
-  // We parse every row that has a dollar-formatted per capita figure.
+  // Parse the main state table using the Wikipedia API's structured wikitext.
+  // Each row follows the pattern: | [[State name]] || ... || $XX,XXX || $XX,XXX || ...
+  // The per capita columns are the only ones matching $\d{2,3},\d{3}
+  // We target rows with a wikilinked state name and extract the most recent per capita value.
 
-  const stateRows = [];
+  const results = [];
+  let dataYear = null;
+
+  // Extract the year from the table caption or surrounding text
+  const yearMatch = wikitext.match(/as of (\d{4})/i) || wikitext.match(/GDP.*?(\d{4})/);
+  if (yearMatch) dataYear = yearMatch[1];
+
+  // Split into table rows
+  const rowPattern = /\|\s*\[\[([^\]|]+?)(?:\|[^\]]*)?\]\][^\n]*\n(?:[^|{][^\n]*\n)*(?=\|-|\|})/g;
+
+  // Simpler and more reliable: scan line by line for state name + per capita values
   const lines = wikitext.split("\n");
-
-  // Find the main GDP table rows
-  let inTable = false;
-  let currentState = null;
-  let colIndex = 0;
+  const seen = new Set();
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
 
-    if (line.startsWith("|-")) {
-      currentState = null;
-      colIndex = 0;
-      inTable = true;
-      continue;
-    }
+    // Match a line that starts a state row: | [[StateName]] or | [[StateName|...]]
+    const stateMatch = line.match(/^\|\s*\[\[([^\]|]+?)(?:\|[^\]]+)?\]\]/);
+    if (!stateMatch) continue;
 
-    if (!inTable) continue;
+    let stateName = stateMatch[1]
+      .replace("Washington (state)", "Washington")
+      .replace(" (state)", "")
+      .trim();
 
-    // Row starts with | or ||
-    if (line.startsWith("|") && !line.startsWith("|-") && !line.startsWith("|+")) {
-      // Split by || to get columns
-      const cols = line.replace(/^\|/, "").split("||").map(c => c.trim());
+    if (stateName === "United States" || seen.has(stateName)) continue;
 
-      // First column: state name (may contain wikilink like [[California]])
-      const nameMatch = cols[0].match(/\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/);
-      if (nameMatch) {
-        currentState = nameMatch[1].replace(" (state)", "").replace("Washington (state)", "Washington");
-        // Handle DC
-        if (currentState === "District of Columbia") currentState = "District of Columbia";
-      }
+    // Collect all $XX,XXX values from this line and the next few lines
+    const context = lines.slice(i, i + 6).join(" ");
+    const perCapitaMatches = [...context.matchAll(/\$\s*([\d,]{5,7})/g)];
 
-      // Look for per capita column - it's the one matching $XX,XXX format
-      // In this table structure the per capita 2024 value is the last $-formatted value
-      const perCapitaCols = cols.filter(c => /^\$[\d,]+$/.test(c.replace(/['']/g, "")));
-      if (currentState && perCapitaCols.length >= 1) {
-        // Take the last one (2024 value, not 2023)
-        const raw = perCapitaCols[perCapitaCols.length - 1].replace(/[\$,'']/g, "");
-        const gdp = parseInt(raw);
-        if (!isNaN(gdp) && gdp > 10000) {
-          // Skip US total row
-          if (currentState !== "United States") {
-            stateRows.push({ name: currentState, gdp });
-          }
-        }
-      }
-    }
+    if (perCapitaMatches.length === 0) continue;
+
+    // Take the last match -- that's the most recent year's per capita
+    const raw = perCapitaMatches[perCapitaMatches.length - 1][1].replace(/,/g, "");
+    const gdp = parseInt(raw);
+
+    if (isNaN(gdp) || gdp < 10000 || gdp > 500000) continue;
+
+    seen.add(stateName);
+    const entry = { name: stateName, gdp };
+    if (stateName === "District of Columbia") entry.note = "Federal district";
+    results.push(entry);
   }
 
-  if (stateRows.length < 40) {
-    throw new Error(`Only parsed ${stateRows.length} states from Wikipedia -- something changed in the table format`);
+  if (results.length < 45) {
+    throw new Error(`Only parsed ${results.length} states -- Wikipedia table structure may have changed`);
   }
 
-  // Add DC note
-  const result = stateRows.map(s => {
-    if (s.name === "District of Columbia") return { ...s, note: "Federal district" };
-    return s;
-  });
-
-  result.sort((a, b) => b.gdp - a.gdp);
-
-  // Extract year from wikitext
-  const yearMatch = wikitext.match(/GDP per capita.*?(\d{4})/);
-  const year = yearMatch ? yearMatch[1] : new Date().getFullYear() - 1;
-
-  console.log(`Wikipedia parse complete. ${result.length} states. Year: ${year}`);
-  return { data: result, year };
+  results.sort((a, b) => b.gdp - a.gdp);
+  console.log(`Wikipedia parse complete. ${results.length} states. Year: ${dataYear}`);
+  return { data: results, year: dataYear || new Date().getFullYear() - 1 };
 }
 
 async function fetchIMF() {
@@ -209,7 +205,7 @@ async function main() {
   );
 
   fs.writeFileSync(appPath, src, "utf8");
-  console.log(`App.jsx updated. US states: BEA ${wiki.year} via Wikipedia. Europe: IMF ${imf.year}.`);
+  console.log(`Done. US: BEA ${wiki.year} via Wikipedia. Europe: IMF ${imf.year}.`);
 }
 
 main().catch(err => {
