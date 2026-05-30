@@ -1,4 +1,4 @@
-# GDP per Capita: US States and European Nations
+# US States vs. European Nations - GDP per Capita
 
 An interactive data visualization comparing US state GDP per capita to European countries.
 
@@ -6,26 +6,16 @@ An interactive data visualization comparing US state GDP per capita to European 
 
 ## Data Sources
 
-- **US states:** nominal GDP per capita comes from [Bureau of Economic Analysis](https://www.bea.gov/data/gdp/gdp-state)
-- **Europe:** GDP per capita PPP, international dollars, comes from [IMF World Economic Outlook](https://data.imf.org/en/datasets/IMF.RES:WEO)
+- **US states:** Wikipedia (sourced from BEA) - nominal GDP per capita, auto-updated annually
+- **Europe:** IMF World Economic Outlook - GDP per capita PPP, international dollars, auto-updated annually
 
 ## Auto-updating
 
-Every April 29th, a GitHub Action fetches fresh data from the BEA and IMF APIs, rebuilds the site, and deploys it automatically. The IMF publishes its WEO database in mid-April; BEA annual state GDP figures are typically available by late March.
+Every April 29th, a GitHub Action fetches fresh data from both sources, rebuilds the site, and deploys automatically.
 
-### One-time setup required
+No API key. No secrets. No maintenance required.
 
-The BEA API requires a free key:
-
-1. Register at https://apps.bea.gov/api/signup/
-2. In your GitHub repo, go to **Settings $\rightarrow$ Secrets and variables $\rightarrow$ Actions**
-3. Add a secret named `BEA_API_KEY` with your key as the value
-
-The IMF DataMapper API requires no key.
-
-### Manual trigger
-
-You can also trigger the update manually anytime via **Actions $\rightarrow$ Update Data & Deploy $\rightarrow$ Run workflow**.
+To trigger manually: **Actions -> Update Data & Deploy -> Run workflow**
 
 ## Running locally
 
@@ -34,15 +24,19 @@ npm install
 npm run dev
 ```
 
-To test the data fetch locally:
+To test the data fetch:
 
 ```bash
-BEA_API_KEY=your_key_here node scripts/fetch-data.js
+node scripts/fetch-data.js
 npm run build
 ```
 
 ## Built with
 
 - [React](https://react.dev/) + [Vite](https://vitejs.dev/)
-- BEA Regional API
-- IMF DataMapper API
+- Wikipedia API (US state GDP data)
+- IMF DataMapper API (European PPP data)
+
+## License
+
+MIT

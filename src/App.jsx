@@ -110,17 +110,17 @@ function findClosestEuCountry(stateGdp) {
 
 const TIER_COLORS = {
   ">100k":   { bar: "#f0c040", text: "#f0c040" },
-  "80–100k": { bar: "#4ade80", text: "#4ade80" },
-  "60–80k":  { bar: "#38bdf8", text: "#38bdf8" },
-  "40–60k":  { bar: "#f97316", text: "#f97316" },
+  "80-100k": { bar: "#4ade80", text: "#4ade80" },
+  "60-80k":  { bar: "#38bdf8", text: "#38bdf8" },
+  "40-60k":  { bar: "#f97316", text: "#f97316" },
   "<40k":    { bar: "#f87171", text: "#f87171" },
 };
 
 function getTier(gdp) {
   if (gdp > 100000) return ">100k";
-  if (gdp > 80000) return "80–100k";
-  if (gdp > 60000) return "60–80k";
-  if (gdp > 40000) return "40–60k";
+  if (gdp > 80000) return "80-100k";
+  if (gdp > 60000) return "60-80k";
+  if (gdp > 40000) return "40-60k";
   return "<40k";
 }
 
@@ -196,7 +196,7 @@ export default function App() {
           }}>
             Each state matched to the European country with the nearest GDP per capita.
             US figures are nominal (BEA 2024); European figures are PPP-adjusted (IMF 2026 estimate).
-            Outliers aside, the bulk of US states and Western European countries cluster in the same $60–90k range - the differences within each group are often larger than the differences between them.
+            Outliers aside, the bulk of US states and Western European countries cluster in the same $60-90k range. The differences within each group are often larger than the differences between them.
           </p>
         </div>
       </div>
@@ -243,7 +243,7 @@ export default function App() {
         >
           <option value="gdp_desc">↓ Richest first</option>
           <option value="gdp_asc">↑ Poorest first</option>
-          <option value="alpha">A–Z</option>
+          <option value="alpha">A-Z</option>
         </select>
 
       </div>
@@ -290,8 +290,8 @@ export default function App() {
               }}
             >
               {/* Row header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6, width: "100%", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, minWidth: 0, overflow: "hidden" }}>
                   <span style={{
                     fontSize: 11,
                     color: "#2a4a6a",
@@ -306,26 +306,30 @@ export default function App() {
                     fontWeight: 600,
                     color: "#d8eaff",
                     letterSpacing: "-0.01em",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}>
                     {state.name}
                   </span>
                   {state.note && (
-                    <span style={{ fontSize: 10, color: "#3a5a7a", fontStyle: "italic" }}>({state.note})</span>
+                    <span style={{ fontSize: 10, color: "#3a5a7a", fontStyle: "italic", flexShrink: 0 }}>({state.note})</span>
                   )}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                  <span style={{ fontSize: 13, color: tierColor.text, fontWeight: 700 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "nowrap" }}>
+                  <span style={{ fontSize: 13, color: tierColor.text, fontWeight: 700, whiteSpace: "nowrap" }}>
                     ${state.gdp.toLocaleString()}
                   </span>
                   <span style={{ fontSize: 11, color: "#3a5a7a" }}>≈</span>
-                  <span style={{ fontSize: 13, color: "#8ab0d0" }}>
+                  <span style={{ fontSize: 13, color: "#8ab0d0", whiteSpace: "nowrap" }}>
                     {state.closest.flag} {state.closest.name}
                   </span>
                   <span style={{
                     fontSize: 11,
                     color: diff > 0 ? "#2ecc71" : "#e74c3c",
-                    minWidth: 48,
+                    minWidth: 40,
                     textAlign: "right",
+                    whiteSpace: "nowrap",
                   }}>
                     {diff > 0 ? "+" : ""}{diffPct}%
                   </span>
@@ -383,16 +387,16 @@ export default function App() {
       }}>
         <p style={{ fontSize: 11, color: "#2a4a6a", lineHeight: 1.9, margin: 0 }}>
           <strong style={{ color: "#3a6a8a" }}>Methodology</strong><br />
-          This chart matches each US state to the European country whose GDP per capita is closest in dollar value. The match is purely by nearest neighbor -- it does not account for population size, industry mix, or cost of living within states.<br /><br />
+          This chart matches each US state to the European country whose GDP per capita is closest in dollar value. The match is purely by nearest neighbor. It does not account for population size, industry mix, or cost of living within states.<br /><br />
 
           <strong style={{ color: "#3a6a8a" }}>Why the numbers aren't perfectly comparable</strong><br />
-          US state figures are <em>nominal</em> GDP per capita in US dollars (BEA, 2024). European figures are <em>PPP-adjusted</em> GDP per capita in international dollars (IMF, 2026 estimates). PPP adjustment removes the effect of price level differences between countries -- it effectively makes European incomes look somewhat higher than nominal exchange rates would suggest. As a result, this comparison modestly favors Europe: on a strict nominal basis, US states would pull even further ahead. Despite this caveat, the comparison is widely used and directionally meaningful.<br /><br />
+          US state figures are <em>nominal</em> GDP per capita in US dollars (BEA, 2024). European figures are <em>PPP-adjusted</em> GDP per capita in international dollars (IMF, 2026 estimates). PPP adjustment removes the effect of price level differences between countries. It effectively makes European incomes look somewhat higher than nominal exchange rates would suggest. As a result, this comparison modestly favors Europe: on a strict nominal basis, US states would pull even further ahead. Despite this caveat, the comparison is widely used and directionally meaningful.<br /><br />
 
           <strong style={{ color: "#3a6a8a" }}>Outliers to note</strong><br />
-          Ireland and Luxembourg report unusually high GDP per capita because large multinational corporations book profits there for tax purposes. This inflates their GDP figures well beyond what residents actually earn. Norway's high figure reflects oil wealth. DC's figure ($263k) reflects output concentrated among a large federal workforce relative to a small residential population -- it is not comparable to a state.<br /><br />
+          Ireland and Luxembourg report unusually high GDP per capita because large multinational corporations book profits there for tax purposes. This inflates their GDP figures well beyond what residents actually earn. Norway's high figure reflects oil wealth. DC's figure ($263k) reflects output concentrated among a large federal workforce relative to a small residential population. It is not comparable to a state.<br /><br />
 
           <strong style={{ color: "#3a6a8a" }}>% difference</strong><br />
-          The percentage shown is calculated as (US state GDP − EU country GDP) / EU country GDP. A positive value means the state's nominal GDP per capita exceeds the matched European country's PPP-adjusted figure.<br /><br />
+          The percentage shown is calculated as (US state GDP - EU country GDP) / EU country GDP. A positive value means the state's nominal GDP per capita exceeds the matched European country's PPP-adjusted figure.<br /><br />
 
           <strong style={{ color: "#3a6a8a" }}>Sources</strong><br />
           US:{" "}
