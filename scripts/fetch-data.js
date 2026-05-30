@@ -214,8 +214,20 @@ async function main() {
   // Update source year labels in the header and footer
   src = src.replace(/BEA \d{4}/g, `BEA ${bea.year}`);
   src = src.replace(/IMF WEO April \d{4}/g, `IMF WEO April ${imf.year}`);
-  src = src.replace(/IMF \d{4} estimate/g, `IMF ${imf.year} estimate`);
+  src = src.replace(/IMF WEO April \d{4} estimate/g, `IMF WEO April ${imf.year} estimate`);
+  src = src.replace(/IMF, \d{4} estimates/g, `IMF, ${imf.year} estimates`);
+  src = src.replace(/PPP \d{4} estimate/g, `PPP ${imf.year} estimate`);
   src = src.replace(/nominal GDP per capita, \d{4}/g, `nominal GDP per capita, ${bea.year}`);
+  // Update the comment line at the top of EU_COUNTRIES
+  src = src.replace(
+    /\/\/ European countries.*\d{4}.*/,
+    `// European countries - GDP per capita PPP ${imf.year} estimate (IMF WEO April ${imf.year}, via Wikipedia)`
+  );
+  // Update the comment line at the top of US_STATES
+  src = src.replace(
+    /\/\/ US States.*\d{4}.*/,
+    `// US States - Nominal GDP per capita ${bea.year} (BEA, via Wikipedia/BEA)`
+  );
 
   fs.writeFileSync(appPath, src, "utf8");
   console.log(`App.jsx updated with BEA ${bea.year} and IMF ${imf.year} data.`);

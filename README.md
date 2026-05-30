@@ -1,4 +1,4 @@
-# US States vs. European Nations — GDP per Capita
+# GDP per Capita: US States and European Nations
 
 An interactive data visualization comparing US state GDP per capita to European countries.
 
@@ -6,8 +6,8 @@ An interactive data visualization comparing US state GDP per capita to European 
 
 ## Data Sources
 
-- **US states:** [Bureau of Economic Analysis](https://www.bea.gov/data/gdp/gdp-state) — nominal GDP per capita
-- **Europe:** [IMF World Economic Outlook](https://data.imf.org/en/datasets/IMF.RES:WEO) — GDP per capita PPP, international dollars
+- **US states:** nominal GDP per capita comes from [Bureau of Economic Analysis](https://www.bea.gov/data/gdp/gdp-state)
+- **Europe:** GDP per capita PPP, international dollars, comes from [IMF World Economic Outlook](https://data.imf.org/en/datasets/IMF.RES:WEO)
 
 ## Auto-updating
 
@@ -18,14 +18,14 @@ Every April 29th, a GitHub Action fetches fresh data from the BEA and IMF APIs, 
 The BEA API requires a free key:
 
 1. Register at https://apps.bea.gov/api/signup/
-2. In your GitHub repo, go to **Settings → Secrets and variables → Actions**
+2. In your GitHub repo, go to **Settings $\rightarrow$ Secrets and variables $\rightarrow$ Actions**
 3. Add a secret named `BEA_API_KEY` with your key as the value
 
 The IMF DataMapper API requires no key.
 
 ### Manual trigger
 
-You can also trigger the update manually anytime via **Actions → Update Data & Deploy → Run workflow**.
+You can also trigger the update manually anytime via **Actions $\rightarrow$ Update Data & Deploy $\rightarrow$ Run workflow**.
 
 ## Running locally
 

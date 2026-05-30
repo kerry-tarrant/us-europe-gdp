@@ -196,7 +196,7 @@ export default function App() {
           }}>
             Each state matched to the European country with the nearest GDP per capita.
             US figures are nominal (BEA 2024); European figures are PPP-adjusted (IMF 2026 estimate).
-            Outliers aside, the bulk of US states and Western European countries cluster in the same $60–90k range — the differences within each group are often larger than the differences between them.
+            Outliers aside, the bulk of US states and Western European countries cluster in the same $60–90k range - the differences within each group are often larger than the differences between them.
           </p>
         </div>
       </div>
@@ -383,13 +383,13 @@ export default function App() {
       }}>
         <p style={{ fontSize: 11, color: "#2a4a6a", lineHeight: 1.9, margin: 0 }}>
           <strong style={{ color: "#3a6a8a" }}>Methodology</strong><br />
-          This chart matches each US state to the European country whose GDP per capita is closest in dollar value. The match is purely by nearest neighbor — it does not account for population size, industry mix, or cost of living within states.<br /><br />
+          This chart matches each US state to the European country whose GDP per capita is closest in dollar value. The match is purely by nearest neighbor -- it does not account for population size, industry mix, or cost of living within states.<br /><br />
 
           <strong style={{ color: "#3a6a8a" }}>Why the numbers aren't perfectly comparable</strong><br />
-          US state figures are <em>nominal</em> GDP per capita in US dollars (BEA, 2024). European figures are <em>PPP-adjusted</em> GDP per capita in international dollars (IMF, 2026 estimates). PPP adjustment removes the effect of price level differences between countries — it effectively makes European incomes look somewhat higher than nominal exchange rates would suggest. As a result, this comparison modestly favors Europe: on a strict nominal basis, US states would pull even further ahead. Despite this caveat, the comparison is widely used and directionally meaningful.<br /><br />
+          US state figures are <em>nominal</em> GDP per capita in US dollars (BEA, 2024). European figures are <em>PPP-adjusted</em> GDP per capita in international dollars (IMF, 2026 estimates). PPP adjustment removes the effect of price level differences between countries -- it effectively makes European incomes look somewhat higher than nominal exchange rates would suggest. As a result, this comparison modestly favors Europe: on a strict nominal basis, US states would pull even further ahead. Despite this caveat, the comparison is widely used and directionally meaningful.<br /><br />
 
           <strong style={{ color: "#3a6a8a" }}>Outliers to note</strong><br />
-          Ireland and Luxembourg report unusually high GDP per capita because large multinational corporations book profits there for tax purposes. This inflates their GDP figures well beyond what residents actually earn. Norway's high figure reflects oil wealth. DC's figure ($263k) reflects output concentrated among a large federal workforce relative to a small residential population — it is not comparable to a state.<br /><br />
+          Ireland and Luxembourg report unusually high GDP per capita because large multinational corporations book profits there for tax purposes. This inflates their GDP figures well beyond what residents actually earn. Norway's high figure reflects oil wealth. DC's figure ($263k) reflects output concentrated among a large federal workforce relative to a small residential population -- it is not comparable to a state.<br /><br />
 
           <strong style={{ color: "#3a6a8a" }}>% difference</strong><br />
           The percentage shown is calculated as (US state GDP − EU country GDP) / EU country GDP. A positive value means the state's nominal GDP per capita exceeds the matched European country's PPP-adjusted figure.<br /><br />
