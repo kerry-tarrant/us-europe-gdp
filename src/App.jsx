@@ -401,6 +401,44 @@ export default function App() {
           <a href="https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(PPP)_per_capita" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia summary</a>
         </p>
       </div>
+
+      {/* Author links */}
+      <div style={{
+        maxWidth: 900,
+        margin: "0 auto",
+        padding: "16px 24px 40px",
+        display: "flex",
+        gap: 16,
+      }}>
+        {[
+          { href: "https://github.com/kerry-tarrant", icon: "fab fa-github" },
+          { href: "https://kerry-tarrant.github.io/", icon: "fas fa-globe" },
+        ].map(({ href, icon }) => (
+          <a
+            key={href}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "3.5rem",
+              height: "3.5rem",
+              backgroundColor: "#495057",
+              color: "#fff",
+              borderRadius: "100%",
+              fontSize: "1.5rem",
+              textDecoration: "none",
+              transition: "background-color 0.2s ease",
+            }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = "#bd5d38"}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = "#495057"}
+          >
+            <i className={icon} />
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
