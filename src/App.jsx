@@ -289,52 +289,53 @@ export default function App() {
                 cursor: "default",
               }}
             >
-              {/* Line 1: rank, state name, US GDP */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, minWidth: 0 }}>
-                  <span style={{
-                    fontSize: 11,
-                    color: "#2a4a6a",
-                    width: 24,
-                    textAlign: "right",
-                    flexShrink: 0,
-                  }}>
-                    {i + 1}
-                  </span>
-                  <span style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "#d8eaff",
-                    letterSpacing: "-0.01em",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}>
+              {/* Line 1: rank + state name */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 5 }}>
+                <span style={{
+                  fontSize: 11,
+                  color: "#2a4a6a",
+                  width: 24,
+                  textAlign: "right",
+                  flexShrink: 0,
+                  paddingTop: 2,
+                }}>
+                  {i + 1}
+                </span>
+                <div>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: "#d8eaff", letterSpacing: "-0.01em" }}>
                     {state.name}
                   </span>
                   {state.note && (
-                    <span style={{ fontSize: 10, color: "#3a5a7a", fontStyle: "italic", flexShrink: 0 }}>({state.note})</span>
+                    <span style={{ fontSize: 10, color: "#3a5a7a", fontStyle: "italic", marginLeft: 6 }}>
+                      ({state.note})
+                    </span>
                   )}
                 </div>
-                <span style={{ fontSize: 14, color: tierColor.text, fontWeight: 700, flexShrink: 0 }}>
+              </div>
+
+              {/* Line 2: US GDP (large) on left, diff% on right — both short, always fits */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 34, marginBottom: 5 }}>
+                <span style={{ fontSize: 17, fontWeight: 700, color: tierColor.text }}>
                   ${state.gdp.toLocaleString()}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: diff > 0 ? "#2ecc71" : "#e74c3c" }}>
+                  {diff > 0 ? "+" : ""}{diffPct}%
                 </span>
               </div>
 
-              {/* Line 2: EU match, EU GDP, diff% */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 34, marginBottom: 8 }}>
+              {/* Line 3: EU match — owns the full line */}
+              <div style={{ paddingLeft: 34, marginBottom: 8 }}>
                 <span style={{ fontSize: 13, color: "#8ab0d0" }}>
-                  ≈ {state.closest.flag} {state.closest.name}{" "}
-                  <span style={{ fontSize: 12, color: "#4a6a8a" }}>${state.closest.gdp.toLocaleString()}</span>
+                  ≈ {state.closest.flag} {state.closest.name}
                 </span>
-                <span style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: diff > 0 ? "#2ecc71" : "#e74c3c",
-                  flexShrink: 0,
-                }}>
-                  {diff > 0 ? "+" : ""}{diffPct}%
+                <span style={{ fontSize: 12, color: "#4a6a8a", marginLeft: 8 }}>
+                  ${state.closest.gdp.toLocaleString()}
                 </span>
+                {state.closest.note && (
+                  <span style={{ fontSize: 10, color: "#3a5a7a", fontStyle: "italic", marginLeft: 6 }}>
+                    ({state.closest.note})
+                  </span>
+                )}
               </div>
 
               {/* Bar tracks */}
