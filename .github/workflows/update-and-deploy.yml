@@ -1,6 +1,8 @@
 name: Update Data & Deploy
 
 on:
+  push:
+    branches: [main]
   schedule:
     # Runs every April 29 at 10:00 UTC — after IMF WEO April release
     - cron: '0 10 29 4 *'
