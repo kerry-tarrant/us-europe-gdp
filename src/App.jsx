@@ -1,278 +1,211 @@
 import { useState, useMemo } from "react";
+import data from "./data.json";
 
-// US States - Nominal GDP per capita 2024 (BEA, via Wikipedia/BEA)
-const US_STATES = [
-  { name: "District of Columbia", gdp: 263220, note: "Federal district" },
-  { name: "New York", gdp: 117332 },
-  { name: "Massachusetts", gdp: 110561 },
-  { name: "Washington", gdp: 108468 },
-  { name: "California", gdp: 104916 },
-  { name: "Connecticut", gdp: 100235 },
-  { name: "North Dakota", gdp: 95982 },
-  { name: "Alaska", gdp: 95147 },
-  { name: "Nebraska", gdp: 93145 },
-  { name: "Colorado", gdp: 93026 },
-  { name: "Delaware", gdp: 98055 },
-  { name: "Illinois", gdp: 90449 },
-  { name: "New Jersey", gdp: 90272 },
-  { name: "Wyoming", gdp: 90335 },
-  { name: "Maryland", gdp: 87021 },
-  { name: "Texas", gdp: 86987 },
-  { name: "Virginia", gdp: 86747 },
-  { name: "Minnesota", gdp: 86371 },
-  { name: "New Hampshire", gdp: 85518 },
-  { name: "Utah", gdp: 86506 },
-  { name: "South Dakota", gdp: 80685 },
-  { name: "Nevada", gdp: 80880 },
-  { name: "Hawaii", gdp: 80325 },
-  { name: "Iowa", gdp: 79631 },
-  { name: "Kansas", gdp: 79513 },
-  { name: "Pennsylvania", gdp: 78544 },
-  { name: "Georgia", gdp: 78754 },
-  { name: "Ohio", gdp: 78120 },
-  { name: "Oregon", gdp: 77916 },
-  { name: "Indiana", gdp: 76004 },
-  { name: "North Carolina", gdp: 75876 },
-  { name: "Tennessee", gdp: 75748 },
-  { name: "Wisconsin", gdp: 75605 },
-  { name: "Rhode Island", gdp: 74594 },
-  { name: "Florida", gdp: 73784 },
-  { name: "Arizona", gdp: 73203 },
-  { name: "Missouri", gdp: 72108 },
-  { name: "Michigan", gdp: 71083 },
-  { name: "Louisiana", gdp: 71642 },
-  { name: "Maine", gdp: 69803 },
-  { name: "Vermont", gdp: 70131 },
-  { name: "New Mexico", gdp: 66229 },
-  { name: "Montana", gdp: 66379 },
-  { name: "Kentucky", gdp: 64110 },
-  { name: "Oklahoma", gdp: 64719 },
-  { name: "Idaho", gdp: 63991 },
-  { name: "South Carolina", gdp: 63711 },
-  { name: "Alabama", gdp: 61846 },
-  { name: "West Virginia", gdp: 60783 },
-  { name: "Arkansas", gdp: 60276 },
-  { name: "Mississippi", gdp: 53061 },
-];
+// ─── Per-metric configuration ─────────────────────────────────────────────────
 
-// European countries - GDP per capita PPP 2026 estimate (IMF WEO April 2026, via Wikipedia)
-const EU_COUNTRIES = [
-  { name: "Ireland", gdp: 159129, flag: "🇮🇪", note: "Inflated by multinationals" },
-  { name: "Luxembourg", gdp: 156719, flag: "🇱🇺" },
-  { name: "Norway", gdp: 115548, flag: "🇳🇴" },
-  { name: "Switzerland", gdp: 105680, flag: "🇨🇭" },
-  { name: "Denmark", gdp: 89667, flag: "🇩🇰" },
-  { name: "Netherlands", gdp: 87773, flag: "🇳🇱" },
-  { name: "San Marino", gdp: 87141, flag: "🇸🇲" },
-  { name: "Iceland", gdp: 82730, flag: "🇮🇸" },
-  { name: "Malta", gdp: 82421, flag: "🇲🇹" },
-  { name: "Belgium", gdp: 78334, flag: "🇧🇪" },
-  { name: "Austria", gdp: 78334, flag: "🇦🇹" },
-  { name: "Sweden", gdp: 77094, flag: "🇸🇪" },
-  { name: "Germany", gdp: 76747, flag: "🇩🇪" },
-  { name: "Andorra", gdp: 75988, flag: "🇦🇩" },
-  { name: "Finland", gdp: 68861, flag: "🇫🇮" },
-  { name: "France", gdp: 68567, flag: "🇫🇷" },
-  { name: "Cyprus", gdp: 67796, flag: "🇨🇾" },
-  { name: "United Kingdom", gdp: 67585, flag: "🇬🇧" },
-  { name: "Italy", gdp: 65761, flag: "🇮🇹" },
-  { name: "Czechia", gdp: 63550, flag: "🇨🇿" },
-  { name: "Lithuania", gdp: 61052, flag: "🇱🇹" },
-  { name: "Slovenia", gdp: 60664, flag: "🇸🇮" },
-  { name: "Spain", gdp: 59187, flag: "🇪🇸" },
-  { name: "Poland", gdp: 59792, flag: "🇵🇱" },
-  { name: "Croatia", gdp: 54359, flag: "🇭🇷" },
-  { name: "Portugal", gdp: 52841, flag: "🇵🇹" },
-  { name: "Estonia", gdp: 51653, flag: "🇪🇪" },
-  { name: "Romania", gdp: 50783, flag: "🇷🇴" },
-  { name: "Hungary", gdp: 50570, flag: "🇭🇺" },
-  { name: "Slovakia", gdp: 49466, flag: "🇸🇰" },
-  { name: "Greece", gdp: 47175, flag: "🇬🇷" },
-  { name: "Latvia", gdp: 45840, flag: "🇱🇻" },
-  { name: "Bulgaria", gdp: 45642, flag: "🇧🇬" },
-  { name: "Montenegro", gdp: 36333, flag: "🇲🇪" },
-  { name: "Serbia", gdp: 34863, flag: "🇷🇸" },
-  { name: "North Macedonia", gdp: 31746, flag: "🇲🇰" },
-  { name: "Bosnia & Herz.", gdp: 24123, flag: "🇧🇦" },
-  { name: "Albania", gdp: 25247, flag: "🇦🇱" },
-  { name: "Kosovo", gdp: 21799, flag: "🇽🇰" },
-  { name: "Moldova", gdp: 21170, flag: "🇲🇩" },
-  { name: "Ukraine", gdp: 22443, flag: "🇺🇦" },
-];
-
-function findClosestEuCountry(stateGdp) {
-  return EU_COUNTRIES.reduce((closest, country) => {
-    return Math.abs(country.gdp - stateGdp) < Math.abs(closest.gdp - stateGdp)
-      ? country
-      : closest;
-  });
-}
-
-const TIER_COLORS = {
-  ">100k":   { bar: "#f0c040", text: "#f0c040" },
-  "80-100k": { bar: "#4ade80", text: "#4ade80" },
-  "60-80k":  { bar: "#38bdf8", text: "#38bdf8" },
-  "40-60k":  { bar: "#f97316", text: "#f97316" },
-  "<40k":    { bar: "#f87171", text: "#f87171" },
+const METRIC_CONFIG = {
+  gdp: {
+    label:      "GDP per capita",
+    subtitle:   () => `Economic Comparison · BEA ${data.gdp.usYear} · IMF WEO April ${data.gdp.euYear}`,
+    desc:       "Each state matched to the European country with the nearest GDP per capita. US: nominal USD (BEA). Europe: PPP-adjusted international dollars (IMF).",
+    format:     v => `$${v.toLocaleString()}`,
+    euFormat:   v => `$${v.toLocaleString()}`,
+    tiers: [
+      { min: 100000, color: "#f0c040", label: ">$100k" },
+      { min: 80000,  color: "#4ade80", label: "$80-100k" },
+      { min: 60000,  color: "#38bdf8", label: "$60-80k" },
+      { min: 40000,  color: "#f97316", label: "$40-60k" },
+      { min: 0,      color: "#f87171", label: "<$40k" },
+    ],
+  },
+  electricity: {
+    label:    "Electricity per capita",
+    subtitle: () => `Electricity · EIA SEDS · Eurostat${data.electricity.year ? ` ${data.electricity.year}` : ""}`,
+    desc:     "Each state matched to the European country with the nearest electricity consumption per capita (kWh per person). US: EIA State Energy Data System. Europe: Eurostat total final consumption.",
+    format:   v => `${v.toLocaleString()} kWh`,
+    euFormat: v => `${v.toLocaleString()} kWh`,
+    tiers: [
+      { min: 20000, color: "#f0c040", label: ">20k kWh" },
+      { min: 14000, color: "#4ade80", label: "14-20k" },
+      { min: 9000,  color: "#38bdf8", label: "9-14k" },
+      { min: 5000,  color: "#f97316", label: "5-9k" },
+      { min: 0,     color: "#f87171", label: "<5k" },
+    ],
+  },
+  income: {
+    label:      "Median household income",
+    subtitle:   () => `Income · Census ACS ${data.income.usYear ?? "2023"} · Eurostat ILC-DI03 ${data.income.euYear ?? ""}`,
+    desc:       "Each state matched to the European country with the nearest median household income. US: Census ACS gross (pre-tax) household income. Europe: Eurostat median equivalised net income in PPS, converted to USD.",
+    format:     v => `$${v.toLocaleString()}`,
+    euFormat:   v => `$${v.toLocaleString()}`,
+    disclaimer: "US figures are gross (pre-tax) household income. European figures are net disposable income (post-tax, post-transfer) in purchasing power standards. This makes European incomes appear lower relative to the US than a like-for-like comparison would show.",
+    tiers: [
+      { min: 80000, color: "#f0c040", label: ">$80k" },
+      { min: 65000, color: "#4ade80", label: "$65-80k" },
+      { min: 50000, color: "#38bdf8", label: "$50-65k" },
+      { min: 35000, color: "#f97316", label: "$35-50k" },
+      { min: 0,     color: "#f87171", label: "<$35k" },
+    ],
+  },
 };
 
-function getTier(gdp) {
-  if (gdp > 100000) return ">100k";
-  if (gdp > 80000) return "80-100k";
-  if (gdp > 60000) return "60-80k";
-  if (gdp > 40000) return "40-60k";
-  return "<40k";
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getTierColor(value, tiers) {
+  for (const tier of tiers) {
+    if (value >= tier.min) return tier.color;
+  }
+  return tiers[tiers.length - 1].color;
 }
 
+function findClosestCountry(stateValue, euData) {
+  return euData.reduce((closest, country) =>
+    Math.abs(country.value - stateValue) < Math.abs(closest.value - stateValue)
+      ? country : closest
+  );
+}
+
+// ─── Shared input / select styles ────────────────────────────────────────────
+
+const controlBase = {
+  background:  "#0d1f31",
+  border:      "1px solid #1a3a5c",
+  borderRadius: 4,
+  padding:     "8px 12px",
+  color:       "#c8d8e8",
+  fontFamily:  "inherit",
+  fontSize:    13,
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function App() {
-  const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("gdp_desc");
+  const [metric,    setMetric]    = useState("gdp");
+  const [sortBy,    setSortBy]    = useState("val_desc");
+  const [search,    setSearch]    = useState("");
   const [highlight, setHighlight] = useState(null);
 
-  const maxGdp = 270000;
+  const config     = METRIC_CONFIG[metric];
+  const metricData = data[metric];
+  const hasData    = metricData?.us?.length > 0 && metricData?.eu?.length > 0;
+
+  const maxVal = useMemo(() => {
+    if (!hasData) return 1;
+    const all = [...metricData.us, ...metricData.eu].map(d => d.value);
+    return Math.max(...all) * 1.05;
+  }, [metric, hasData]);
 
   const filtered = useMemo(() => {
-    let list = US_STATES.map((s) => ({
-      ...s,
-      closest: findClosestEuCountry(s.gdp),
-      tier: getTier(s.gdp),
+    if (!hasData) return [];
+
+    let list = metricData.us.map(state => ({
+      ...state,
+      closest:    findClosestCountry(state.value, metricData.eu),
+      tierColor:  getTierColor(state.value, config.tiers),
     }));
 
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.closest.name.toLowerCase().includes(q)
+      list = list.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        s.closest.name.toLowerCase().includes(q)
       );
     }
 
-    if (sortBy === "gdp_desc") list.sort((a, b) => b.gdp - a.gdp);
-    if (sortBy === "gdp_asc") list.sort((a, b) => a.gdp - b.gdp);
-    if (sortBy === "alpha") list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "val_desc")  list.sort((a, b) => b.value - a.value);
+    if (sortBy === "val_asc")   list.sort((a, b) => a.value - b.value);
+    if (sortBy === "alpha_az")  list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "alpha_za")  list.sort((a, b) => b.name.localeCompare(a.name));
 
     return list;
-  }, [search, sortBy]);
+  }, [metric, sortBy, search, hasData]);
 
   return (
-    <div style={{
-      fontFamily: "'Courier New', monospace",
-      background: "#080d12",
-      minHeight: "100vh",
-      color: "#c8d8e8",
-      padding: "0",
-    }}>
+    <div style={{ fontFamily: "'Courier New', monospace", background: "#080d12", minHeight: "100vh", color: "#c8d8e8", padding: 0 }}>
+
       {/* Header */}
-      <div style={{
-        background: "linear-gradient(180deg, #0a1929 0%, #080d12 100%)",
-        borderBottom: "1px solid #1a3a5c",
-        padding: "32px 24px 24px",
-      }}>
+      <div style={{ background: "linear-gradient(180deg, #0a1929 0%, #080d12 100%)", borderBottom: "1px solid #1a3a5c", padding: "32px 24px 24px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <div style={{
-            fontSize: 11,
-            letterSpacing: "0.2em",
-            color: "#4a7fa8",
-            marginBottom: 8,
-            textTransform: "uppercase",
-          }}>
-            Economic Comparison · BEA 2024 · IMF WEO April 2026
+          <div style={{ fontSize: 11, letterSpacing: "0.2em", color: "#4a7fa8", marginBottom: 8, textTransform: "uppercase" }}>
+            {config.subtitle()}
           </div>
-          <h1 style={{
-            fontSize: "clamp(22px, 4vw, 36px)",
-            fontWeight: 700,
-            color: "#e8f4ff",
-            margin: "0 0 8px",
-            letterSpacing: "-0.02em",
-          }}>
+          <h1 style={{ fontSize: "clamp(22px, 4vw, 36px)", fontWeight: 700, color: "#e8f4ff", margin: "0 0 8px", letterSpacing: "-0.02em" }}>
             US States vs. European Nations
           </h1>
-          <p style={{
-            fontSize: 13,
-            color: "#5a8ab0",
-            margin: 0,
-            lineHeight: 1.6,
-            maxWidth: 600,
-          }}>
-            Each state matched to the European country with the nearest GDP per capita.
-            US figures are nominal (BEA 2024); European figures are PPP-adjusted (IMF 2026 estimate).
-            Outliers aside, the bulk of US states and Western European countries cluster in the same $60-90k range. The differences within each group are often larger than the differences between them.
+          <p style={{ fontSize: 13, color: "#5a8ab0", margin: 0, lineHeight: 1.6, maxWidth: 600 }}>
+            {config.desc}
           </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div style={{
-        maxWidth: 900,
-        margin: "0 auto",
-        padding: "16px 24px",
-        display: "flex",
-        gap: 12,
-        flexWrap: "wrap",
-        alignItems: "center",
-      }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "16px 24px", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <select
+          value={metric}
+          onChange={e => { setMetric(e.target.value); setSortBy("val_desc"); setSearch(""); }}
+          style={{ ...controlBase, cursor: "pointer" }}
+        >
+          <option value="gdp">GDP per capita</option>
+          <option value="electricity">Electricity per capita</option>
+          <option value="income">Median household income</option>
+        </select>
+
         <input
           placeholder="Search state or country…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            background: "#0d1f31",
-            border: "1px solid #1a3a5c",
-            borderRadius: 4,
-            padding: "8px 12px",
-            color: "#c8d8e8",
-            fontFamily: "inherit",
-            fontSize: 13,
-            flex: "1 1 200px",
-            outline: "none",
-          }}
+          onChange={e => setSearch(e.target.value)}
+          style={{ ...controlBase, flex: "1 1 180px", outline: "none" }}
         />
+
         <select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          style={{
-            background: "#0d1f31",
-            border: "1px solid #1a3a5c",
-            borderRadius: 4,
-            padding: "8px 12px",
-            color: "#c8d8e8",
-            fontFamily: "inherit",
-            fontSize: 13,
-            cursor: "pointer",
-          }}
+          onChange={e => setSortBy(e.target.value)}
+          style={{ ...controlBase, cursor: "pointer" }}
         >
-          <option value="gdp_desc">↓ Richest first</option>
-          <option value="gdp_asc">↑ Poorest first</option>
-          <option value="alpha">A-Z</option>
+          <option value="val_desc">↓ Highest first</option>
+          <option value="val_asc">↑ Lowest first</option>
+          <option value="alpha_az">A → Z</option>
+          <option value="alpha_za">Z → A</option>
         </select>
-
       </div>
+
+      {/* Income disclaimer */}
+      {metric === "income" && config.disclaimer && (
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 12px" }}>
+          <p style={{ fontSize: 12, color: "#c09050", background: "#0f0a00", border: "1px solid #3a2800", borderRadius: 4, padding: "8px 12px", margin: 0, lineHeight: 1.7 }}>
+            ⚠ {config.disclaimer}
+          </p>
+        </div>
+      )}
+
+      {/* No-data state */}
+      {!hasData && (
+        <div style={{ maxWidth: 900, margin: "48px auto", padding: "0 24px", textAlign: "center" }}>
+          <p style={{ fontSize: 14, color: "#3a5a7a" }}>
+            Data not yet available — populates on the 1st of each month.
+          </p>
+        </div>
+      )}
 
       {/* Legend */}
-      <div style={{
-        maxWidth: 900,
-        margin: "0 auto",
-        padding: "0 24px 16px",
-        display: "flex",
-        gap: 16,
-        flexWrap: "wrap",
-      }}>
-        {Object.entries(TIER_COLORS).map(([label, colors]) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#a0b8cc" }}>
-            <div style={{ width: 10, height: 10, background: colors.bar, borderRadius: 2 }} />
-            {label}
-          </div>
-        ))}
-      </div>
+      {hasData && (
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 16px", display: "flex", gap: 16, flexWrap: "wrap" }}>
+          {config.tiers.map(tier => (
+            <div key={tier.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#a0b8cc" }}>
+              <div style={{ width: 10, height: 10, background: tier.color, borderRadius: 2 }} />
+              {tier.label}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* List */}
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 40px" }}>
         {filtered.map((state, i) => {
-          const tierColor = TIER_COLORS[state.tier];
-          const barPct = (state.gdp / maxGdp) * 100;
-          const euBarPct = (state.closest.gdp / maxGdp) * 100;
-          const diff = state.gdp - state.closest.gdp;
-          const diffPct = ((diff / state.closest.gdp) * 100).toFixed(0);
+          const barPct   = (state.value / maxVal) * 100;
+          const euBarPct = (state.closest.value / maxVal) * 100;
+          const diff     = state.value - state.closest.value;
+          const diffPct  = ((diff / state.closest.value) * 100).toFixed(0);
 
           return (
             <div
@@ -291,14 +224,7 @@ export default function App() {
             >
               {/* Line 1: rank + state name */}
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 5 }}>
-                <span style={{
-                  fontSize: 11,
-                  color: "#4a6a8a",
-                  width: 24,
-                  textAlign: "right",
-                  flexShrink: 0,
-                  paddingTop: 2,
-                }}>
+                <span style={{ fontSize: 11, color: "#4a6a8a", width: 24, textAlign: "right", flexShrink: 0, paddingTop: 2 }}>
                   {i + 1}
                 </span>
                 <div>
@@ -313,20 +239,20 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Line 2: US GDP standalone */}
+              {/* Line 2: US value */}
               <div style={{ paddingLeft: 34, marginBottom: 4 }}>
-                <span style={{ fontSize: 17, fontWeight: 700, color: tierColor.text }}>
-                  ${state.gdp.toLocaleString()}
+                <span style={{ fontSize: 17, fontWeight: 700, color: state.tierColor }}>
+                  {config.format(state.value)}
                 </span>
               </div>
 
-              {/* Line 3: EU match + diff% — wraps gracefully on narrow screens */}
+              {/* Line 3: EU match + diff% */}
               <div style={{ paddingLeft: 34, marginBottom: 8, display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px 8px" }}>
                 <span style={{ fontSize: 13, color: "#8ab0d0" }}>
                   ≈ {state.closest.flag} {state.closest.name}
                 </span>
                 <span style={{ fontSize: 12, color: "#6a8aaa" }}>
-                  ${state.closest.gdp.toLocaleString()}
+                  {config.euFormat(state.closest.value)}
                 </span>
                 {state.closest.note && (
                   <span style={{ fontSize: 11, color: "#5a7a9a", fontStyle: "italic" }}>
@@ -341,28 +267,10 @@ export default function App() {
               {/* Bar tracks */}
               <div style={{ paddingLeft: 34 }}>
                 <div style={{ position: "relative", height: 6, background: "#0a1825", borderRadius: 3, marginBottom: 3 }}>
-                  <div style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    height: "100%",
-                    width: `${barPct}%`,
-                    background: tierColor.bar,
-                    borderRadius: 3,
-                    transition: "width 0.3s ease",
-                  }} />
+                  <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${barPct}%`, background: state.tierColor, borderRadius: 3, transition: "width 0.3s ease" }} />
                 </div>
                 <div style={{ position: "relative", height: 4, background: "#0a1825", borderRadius: 3 }}>
-                  <div style={{
-                    position: "absolute",
-                    left: 0,
-                    top: 0,
-                    height: "100%",
-                    width: `${euBarPct}%`,
-                    background: "#2a4a6a",
-                    borderRadius: 3,
-                    transition: "width 0.3s ease",
-                  }} />
+                  <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${euBarPct}%`, background: "#2a4a6a", borderRadius: 3, transition: "width 0.3s ease" }} />
                 </div>
               </div>
             </div>
@@ -371,45 +279,43 @@ export default function App() {
       </div>
 
       {/* Footer note */}
-      <div style={{
-        maxWidth: 900,
-        margin: "0 auto",
-        padding: "20px 24px 32px",
-        borderTop: "1px solid #0d1f31",
-      }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 24px 32px", borderTop: "1px solid #0d1f31" }}>
         <p style={{ fontSize: 12, color: "#5a8ab0", lineHeight: 1.9, margin: 0 }}>
           <strong style={{ color: "#7ab0d0" }}>Methodology</strong><br />
-          This chart matches each US state to the European country whose GDP per capita is closest in dollar value. The match is purely by nearest neighbor. It does not account for population size, industry mix, or cost of living within states.<br /><br />
+          Each US state is matched to the European country whose value is closest (nearest neighbor). The match is recalculated independently per metric — a state may match a different country depending on which metric is selected. Multiple states can match the same European country.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>Why the numbers aren't perfectly comparable</strong><br />
-          US state figures are <em>nominal</em> GDP per capita in US dollars (BEA, 2024). European figures are <em>PPP-adjusted</em> GDP per capita in international dollars (IMF, 2026 estimates). PPP adjustment removes the effect of price level differences between countries. It effectively makes European incomes look somewhat higher than nominal exchange rates would suggest. As a result, this comparison modestly favors Europe: on a strict nominal basis, US states would pull even further ahead. Despite this caveat, the comparison is widely used and directionally meaningful.<br /><br />
+          <strong style={{ color: "#7ab0d0" }}>GDP per capita</strong><br />
+          US state figures are <em>nominal</em> GDP per capita in USD (BEA, {data.gdp.usYear}). European figures are <em>PPP-adjusted</em> GDP per capita in international dollars (IMF, {data.gdp.euYear} estimate). PPP adjustment makes European incomes look somewhat higher than nominal exchange rates suggest, so this comparison modestly favors Europe. Ireland and Luxembourg are inflated by multinationals booking profits there; DC reflects concentrated federal output relative to a small resident population.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>Outliers to note</strong><br />
-          Ireland and Luxembourg report unusually high GDP per capita because large multinational corporations book profits there for tax purposes. This inflates their GDP figures well beyond what residents actually earn. Norway's high figure reflects oil wealth. DC's figure ($263k) reflects output concentrated among a large federal workforce relative to a small residential population. It is not comparable to a state.<br /><br />
+          <strong style={{ color: "#7ab0d0" }}>Electricity per capita</strong><br />
+          US figures are total electricity consumption per capita in kWh (EIA State Energy Data System). European figures are total final electricity consumption in GWh (Eurostat <em>nrg_ind_use</em>) divided by population (Eurostat <em>demo_pjan</em>). Both cover all end-use sectors.<br /><br />
+
+          <strong style={{ color: "#7ab0d0" }}>Median household income</strong><br />
+          US figures are median household income in 2023 inflation-adjusted dollars, gross (pre-tax), from the Census Bureau ACS 1-Year estimates. European figures are median equivalised net disposable income in PPS (Purchasing Power Standards) from Eurostat ILC-DI03, converted to USD at approximately 1 PPS = $1.07. Because US figures are pre-tax and European figures are post-tax, direct comparison understates the gap between them.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>% difference</strong><br />
-          The percentage shown is calculated as (US state GDP - EU country GDP) / EU country GDP. A positive value means the state's nominal GDP per capita exceeds the matched European country's PPP-adjusted figure.<br /><br />
+          Calculated as (US state value − EU country value) / EU country value. Positive means the US state's figure exceeds the matched European country's figure.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>Sources</strong><br />
-          US:{" "}
-          <a href="https://www.bea.gov/data/gdp/gdp-state" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Bureau of Economic Analysis</a>{" "}
-          (nominal GDP per capita, 2024) ·{" "}
-          <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_GDP" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia summary</a><br />
-          Europe:{" "}
-          <a href="https://data.imf.org/en/datasets/IMF.RES:WEO" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>IMF World Economic Outlook, April 2026</a>{" "}
-          (GDP per capita PPP, international dollars) ·{" "}
-          <a href="https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(PPP)_per_capita" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia summary</a>
+          GDP US:{" "}
+          <a href="https://www.bea.gov/data/gdp/gdp-state" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Bureau of Economic Analysis</a>{" "}·{" "}
+          <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_GDP" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia</a><br />
+          GDP Europe:{" "}
+          <a href="https://data.imf.org/en/datasets/IMF.RES:WEO" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>IMF World Economic Outlook</a>{" "}·{" "}
+          <a href="https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(PPP)_per_capita" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia</a><br />
+          Electricity US:{" "}
+          <a href="https://www.eia.gov/state/seds/" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>EIA State Energy Data System</a><br />
+          Electricity Europe:{" "}
+          <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_ind_use" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat nrg_ind_use</a><br />
+          Income US:{" "}
+          <a href="https://data.census.gov/table/ACSDT1Y2023.B19013" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Census Bureau ACS 2023</a><br />
+          Income Europe:{" "}
+          <a href="https://ec.europa.eu/eurostat/databrowser/view/ilc_di03" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat ILC-DI03</a>
         </p>
       </div>
 
       {/* Author links */}
-      <div style={{
-        maxWidth: 900,
-        margin: "0 auto",
-        padding: "16px 24px 40px",
-        display: "flex",
-        gap: 16,
-      }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "16px 24px 40px", display: "flex", gap: 16 }}>
         {[
           { href: "https://github.com/kerry-tarrant", icon: "fab fa-github" },
           { href: "https://kerry-tarrant.github.io/", icon: "fas fa-globe" },
@@ -439,6 +345,7 @@ export default function App() {
           </a>
         ))}
       </div>
+
     </div>
   );
 }

@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
   schedule:
-    # Runs every April 29 at 10:00 UTC — after IMF WEO April release
-    - cron: '0 10 29 4 *'
+    # Runs on the 1st of every month at 00:00 UTC
+    - cron: '0 0 1 * *'
   workflow_dispatch:
 
 permissions:
@@ -27,7 +27,7 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-      - name: Fetch latest GDP data
+      - name: Fetch latest data (GDP, electricity, income)
         continue-on-error: true
         run: node scripts/fetch-data.js
 
@@ -38,6 +38,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/App.jsx docs/ package-lock.json
+          git add src/data.json docs/ package-lock.json
           git add data/ 2>/dev/null || true
-          git diff --cached --quiet || (git commit -m "chore: auto-update GDP data $(date +'%Y-%m-%d')" && git push)
+          git diff --cached --quiet || (git commit -m "chore: auto-update metrics data $(date +'%Y-%m-%d')" && git push)
