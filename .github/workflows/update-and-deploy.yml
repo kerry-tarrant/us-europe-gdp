@@ -28,6 +28,7 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
       - name: Fetch latest GDP data
+        continue-on-error: true
         run: node scripts/fetch-data.js
 
       - name: Build site
