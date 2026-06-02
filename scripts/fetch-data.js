@@ -14,6 +14,21 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+async function fetchWithRetry(url, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      const wait = attempt * 3000;
+      console.warn(`Attempt ${attempt} failed (${err.message}). Retrying in ${wait / 1000}s…`);
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+}
+
 const EU_COUNTRY_META = {
   IRL: { name: "Ireland",         flag: "🇮🇪", note: "Inflated by multinationals" },
   LUX: { name: "Luxembourg",      flag: "🇱🇺" },
@@ -71,8 +86,7 @@ async function fetchWikipediaStates() {
     origin: "*",
   });
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Wikipedia API returned ${res.status}`);
+  const res = await fetchWithRetry(url);
   const json = await res.json();
   const wikitext = json.parse.wikitext["*"];
 
@@ -141,8 +155,7 @@ async function fetchIMF() {
   const url = `https://www.imf.org/external/datamapper/api/v1/PPPPC/${codes}`;
   console.log("Fetching IMF European data...");
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`IMF API returned ${res.status}`);
+  const res = await fetchWithRetry(url);
   const json = await res.json();
 
   const results = [];
@@ -209,6 +222,19 @@ async function main() {
   );
 
   fs.writeFileSync(appPath, src, "utf8");
+
+  const dataDir = path.join(__dirname, "../data");
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+  fs.writeFileSync(
+    path.join(dataDir, "gdp.json"),
+    JSON.stringify({
+      updated: new Date().toISOString().slice(0, 10),
+      us: { year: wiki.year, data: wiki.data },
+      europe: { year: imf.year, data: imf.data },
+    }, null, 2),
+    "utf8"
+  );
+
   console.log(`Done. US: BEA ${wiki.year} via Wikipedia. Europe: IMF ${imf.year}.`);
 }
 

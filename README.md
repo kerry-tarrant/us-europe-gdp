@@ -1,5 +1,7 @@
 # US States vs. European Nations - GDP per Capita
 
+[![Update Data & Deploy](https://github.com/kerry-tarrant/us-europe-gdp/actions/workflows/update-and-deploy.yml/badge.svg)](https://github.com/kerry-tarrant/us-europe-gdp/actions/workflows/update-and-deploy.yml)
+
 An interactive data visualization comparing US state GDP per capita to European countries.
 
 **Live site:** https://kerry-tarrant.github.io/us-europe-gdp/
