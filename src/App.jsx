@@ -289,9 +289,9 @@ export default function App() {
                 cursor: "default",
               }}
             >
-              {/* Row header */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6, width: "100%", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, minWidth: 0, overflow: "hidden" }}>
+              {/* Line 1: rank, state name, US GDP */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, minWidth: 0 }}>
                   <span style={{
                     fontSize: 11,
                     color: "#2a4a6a",
@@ -302,13 +302,13 @@ export default function App() {
                     {i + 1}
                   </span>
                   <span style={{
-                    fontSize: 14,
+                    fontSize: 15,
                     fontWeight: 600,
                     color: "#d8eaff",
                     letterSpacing: "-0.01em",
-                    whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}>
                     {state.name}
                   </span>
@@ -316,24 +316,25 @@ export default function App() {
                     <span style={{ fontSize: 10, color: "#3a5a7a", fontStyle: "italic", flexShrink: 0 }}>({state.note})</span>
                   )}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "nowrap" }}>
-                  <span style={{ fontSize: 13, color: tierColor.text, fontWeight: 700, whiteSpace: "nowrap" }}>
-                    ${state.gdp.toLocaleString()}
-                  </span>
-                  <span style={{ fontSize: 11, color: "#3a5a7a" }}>≈</span>
-                  <span style={{ fontSize: 13, color: "#8ab0d0", whiteSpace: "nowrap" }}>
-                    {state.closest.flag} {state.closest.name}
-                  </span>
-                  <span style={{
-                    fontSize: 11,
-                    color: diff > 0 ? "#2ecc71" : "#e74c3c",
-                    minWidth: 40,
-                    textAlign: "right",
-                    whiteSpace: "nowrap",
-                  }}>
-                    {diff > 0 ? "+" : ""}{diffPct}%
-                  </span>
-                </div>
+                <span style={{ fontSize: 14, color: tierColor.text, fontWeight: 700, flexShrink: 0 }}>
+                  ${state.gdp.toLocaleString()}
+                </span>
+              </div>
+
+              {/* Line 2: EU match, EU GDP, diff% */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 34, marginBottom: 8 }}>
+                <span style={{ fontSize: 13, color: "#8ab0d0" }}>
+                  ≈ {state.closest.flag} {state.closest.name}{" "}
+                  <span style={{ fontSize: 12, color: "#4a6a8a" }}>${state.closest.gdp.toLocaleString()}</span>
+                </span>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: diff > 0 ? "#2ecc71" : "#e74c3c",
+                  flexShrink: 0,
+                }}>
+                  {diff > 0 ? "+" : ""}{diffPct}%
+                </span>
               </div>
 
               {/* Bar tracks */}
@@ -361,16 +362,6 @@ export default function App() {
                     borderRadius: 3,
                     transition: "width 0.3s ease",
                   }} />
-                  <div style={{
-                    position: "absolute",
-                    right: 0,
-                    top: -2,
-                    fontSize: 9,
-                    color: "#3a5a7a",
-                    whiteSpace: "nowrap",
-                  }}>
-                    {state.closest.flag} ${state.closest.gdp.toLocaleString()}
-                  </div>
                 </div>
               </div>
             </div>
