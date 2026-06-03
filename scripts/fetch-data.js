@@ -3,7 +3,7 @@
  *
  * Fetches three metrics for US states and European countries:
  *   1. GDP per capita          — Wikipedia (US) + IMF DataMapper (EU)
- *   2. Electricity per capita  — EIA SEDS HTML table (US) + Eurostat nrg_cb_e + demo_pjan (EU)
+ *   2. Total electricity (GWh)  — EIA SEDS HTML table (US) + Eurostat nrg_cb_e (EU)
  *   3. Median household income — Wikipedia (US) + Eurostat ilc_di03 (EU)
  *
  * Writes results to src/data.json. No API keys required.
@@ -274,9 +274,9 @@ async function fetchIMF() {
 // ─── Electricity ─────────────────────────────────────────────────────────────
 
 async function fetchEIAElectricity() {
-  console.log("Fetching US electricity per capita from EIA SEDS…");
-  // Table C17: columns are rank | total state | total GWH | per-capita state | per-capita kWh | ...
-  // State names are in <th> elements; values in <td>. Per-capita section is cells[3] and cells[4].
+  console.log("Fetching US total electricity (GWh) from EIA SEDS…");
+  // Table row layout: rank | total state (th) | total TWh | per-capita state (th) | per-capita kWh
+  // cells[1] = state name, cells[2] = total TWh → convert × 1000 to get GWh
   const url = "https://www.eia.gov/state/seds/sep_sum/html/rank_es_capita.html";
   const res = await fetchWithRetry(url);
   const html = await res.text();
@@ -290,15 +290,17 @@ async function fetchEIAElectricity() {
     const cells = [...rowMatch[1].matchAll(cellRegex)].map(m => stripTags(m[1]));
     if (cells.length < 5) continue;
 
-    // cells[0] = rank, cells[3] = per-capita state name, cells[4] = per-capita kWh
+    // cells[0] = rank, cells[1] = total state name, cells[2] = total TWh
     const rank  = parseInt(cells[0]);
     if (isNaN(rank) || rank < 1 || rank > 60) continue;
 
-    const name  = cells[3].replace(/\*+$/, "").replace(/\s+/g, " ").trim();
-    const value = parseInt(cells[4].replace(/,/g, ""));
+    const name   = cells[1].replace(/\*+$/, "").replace(/\s+/g, " ").trim();
+    const twhStr = cells[2].replace(/,/g, "");
+    const twh    = parseFloat(twhStr);
+    const gwh    = Math.round(twh * 1000);
 
-    if (!name || isNaN(value) || value < 1000 || value > 100000) continue;
-    results.push({ name, value });
+    if (!name || isNaN(gwh) || gwh < 1000 || gwh > 600000) continue;
+    results.push({ name, value: gwh });
   }
 
   if (results.length < 40) throw new Error(`EIA: only parsed ${results.length} states`);
@@ -308,9 +310,8 @@ async function fetchEIAElectricity() {
 }
 
 async function fetchEurostatElectricity() {
-  // nrg_ind_use was retired; nrg_cb_e (complete electricity balance) replaces it.
-  // FC = total final consumption, E7000 = electricity, GWH
-  console.log("Fetching EU electricity consumption from Eurostat nrg_cb_e…");
+  // nrg_cb_e: total final consumption of electricity in GWH per country.
+  console.log("Fetching EU total electricity (GWh) from Eurostat nrg_cb_e…");
   const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nrg_cb_e" +
     "?format=JSON&lang=EN&nrg_bal=FC&siec=E7000&unit=GWH";
   const res = await fetchWithRetry(url);
@@ -318,29 +319,17 @@ async function fetchEurostatElectricity() {
 
   const rawData = parseEurostatData(json);
 
-  console.log("Fetching EU population from Eurostat demo_pjan…");
-  const popUrl = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/demo_pjan" +
-    "?format=JSON&lang=EN&sex=T&age=TOTAL";
-  const popRes = await fetchWithRetry(popUrl);
-  const popJson = await popRes.json();
-  const popData = parseEurostatData(popJson);
-
   const results = [];
   let latestYear = 0;
 
   for (const [isoCode, entry] of Object.entries(rawData)) {
-    const pop = popData[isoCode];
-    if (!pop?.value) { console.warn(`Eurostat elec: no population for ${isoCode}`); continue; }
-
-    // entry.value is GWH; pop.value is persons → kWh per capita
-    const kwhPerCapita = Math.round((entry.value * 1_000_000) / pop.value);
-    if (kwhPerCapita < 100 || kwhPerCapita > 100_000) {
-      console.warn(`Eurostat elec: implausible value for ${isoCode}: ${kwhPerCapita} kWh`);
+    const gwh = Math.round(entry.value);
+    if (gwh < 100 || gwh > 10_000_000) {
+      console.warn(`Eurostat elec: implausible value for ${isoCode}: ${gwh} GWh`);
       continue;
     }
-
     if (entry.year > latestYear) latestYear = entry.year;
-    results.push({ ...EU_COUNTRY_META[isoCode], value: kwhPerCapita });
+    results.push({ ...EU_COUNTRY_META[isoCode], value: gwh });
   }
 
   results.sort((a, b) => b.value - a.value);
