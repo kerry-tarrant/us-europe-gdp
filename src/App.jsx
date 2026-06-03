@@ -33,16 +33,16 @@ const METRIC_CONFIG = {
     ],
   },
   income: {
-    label:      "Median net household income",
-    subtitle:   () => `Income · Census ACS ${data.income.usYear ?? "2023"} · Eurostat ILC-DI03 ${data.income.euYear ?? ""}`,
-    desc:       "Each state matched to the European country with the nearest median net household income. US: Census ACS gross income minus estimated 22% combined taxes (approximate). Europe: Eurostat median equivalised net disposable income in PPS, converted to USD.",
+    label:      "Per capita income",
+    subtitle:   () => `Income · Census ACS ${data.income.usYear ?? "2023"} · Eurostat NAMA_10_PC ${data.income.euYear ?? ""}`,
+    desc:       "Each state matched to the European country with the nearest gross per capita income. US: Census ACS per capita income (gross, before taxes). Europe: Eurostat gross disposable household income per capita in PPS, converted to USD at ~1 PPS = $1.07.",
     format:     v => `$${v.toLocaleString()}`,
     euFormat:   v => `$${v.toLocaleString()}`,
     tiers: [
-      { min: 60000, color: "#f0c040", label: ">$60k" },
-      { min: 40000, color: "#4ade80", label: "$40-60k" },
-      { min: 25000, color: "#38bdf8", label: "$25-40k" },
-      { min: 12000, color: "#f97316", label: "$12-25k" },
+      { min: 50000, color: "#f0c040", label: ">$50k" },
+      { min: 35000, color: "#4ade80", label: "$35-50k" },
+      { min: 22000, color: "#38bdf8", label: "$22-35k" },
+      { min: 12000, color: "#f97316", label: "$12-22k" },
       { min: 0,     color: "#f87171", label: "<$12k" },
     ],
   },
@@ -146,7 +146,7 @@ export default function App() {
         >
           <option value="gdp">GDP (PPP) per capita</option>
           <option value="electricity">Total electricity</option>
-          <option value="income">Net household income</option>
+          <option value="income">Per capita income</option>
         </select>
 
         <input
@@ -293,8 +293,8 @@ export default function App() {
           <strong style={{ color: "#7ab0d0" }}>Total electricity</strong><br />
           US figures are total electricity consumption in GWh (EIA State Energy Data System, {data.electricity.year}). European figures are total final electricity consumption in GWh (Eurostat <em>nrg_cb_e</em>, {data.electricity.year}). Both cover all end-use sectors. Ukraine figure is 2020 (most recent Eurostat data available); Kosovo is 2023.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>Median net household income</strong><br />
-          US figures are Census ACS 2023 median household income with an approximate 22% combined tax deduction applied (federal income tax ~9%, FICA ~8%, average state income tax ~5%), yielding approximate post-tax net income. European figures are Eurostat median equivalised net disposable income in PPS from ILC-DI03, converted to USD at approximately 1 PPS = $1.07. The US deduction is a national average — actual net income varies by state tax policy and household composition.<br /><br />
+          <strong style={{ color: "#7ab0d0" }}>Per capita income</strong><br />
+          US figures are Census ACS per capita income — total money income of all residents 15+ divided by total population, before taxes (gross). European figures are Eurostat gross disposable household income per capita (NAMA_10_PC, indicator B6G) in PPS per inhabitant, converted to USD at approximately 1 PPS = $1.07. Both measures are gross and per-person, making them directly comparable across the two regions.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>% difference</strong><br />
           Calculated as (US state value − EU country value) / EU country value. Positive means the US state's figure exceeds the matched European country's figure.<br /><br />
@@ -311,9 +311,9 @@ export default function App() {
           Electricity Europe:{" "}
           <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat nrg_cb_e</a><br />
           Income US:{" "}
-          <a href="https://data.census.gov/table/ACSDT1Y2023.B19013" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Census Bureau ACS 2023</a><br />
+          <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_per_capita_income" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia · Census ACS per capita income</a><br />
           Income Europe:{" "}
-          <a href="https://ec.europa.eu/eurostat/databrowser/view/ilc_di03" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat ILC-DI03</a>
+          <a href="https://ec.europa.eu/eurostat/databrowser/view/nama_10_pc" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat NAMA_10_PC</a>
         </p>
       </div>
 

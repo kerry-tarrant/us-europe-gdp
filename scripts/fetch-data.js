@@ -4,7 +4,7 @@
  * Fetches three metrics for US states and European countries:
  *   1. GDP per capita          — Wikipedia (US) + IMF DataMapper (EU)
  *   2. Total electricity (GWh)  — EIA SEDS HTML table (US) + Eurostat nrg_cb_e (EU)
- *   3. Median household income — Wikipedia (US) + Eurostat ilc_di03 (EU)
+ *   3. Gross per capita income  — Wikipedia/Census ACS (US) + Eurostat nama_10_pc (EU)
  *
  * Writes results to src/data.json. No API keys required.
  */
@@ -340,11 +340,11 @@ async function fetchEurostatElectricity() {
 // ─── Income ───────────────────────────────────────────────────────────────────
 
 async function fetchWikipediaIncome() {
-  // Census ACS API now requires an API key; use Wikipedia which mirrors ACS 2023 data.
-  console.log("Fetching US median household income from Wikipedia (ACS 2023)…");
+  // Census ACS per capita income by state (gross, before taxes).
+  console.log("Fetching US per capita income from Wikipedia (Census ACS)…");
   const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
     action: "parse",
-    page: "List_of_U.S._states_and_territories_by_income",
+    page: "List_of_U.S._states_and_territories_by_per_capita_income",
     prop: "wikitext",
     format: "json",
     origin: "*",
@@ -376,13 +376,24 @@ async function fetchWikipediaIncome() {
 
     if (stateName === "United States" || seen.has(stateName)) continue;
 
-    // The 2023 value is the first $X,XXX in the next 1-3 lines
+    // Per capita income is the first $X,XXX on the same line (|| separated) or next 1-3 lines.
+    // Also handles {{formatnum:NNNNN}} template syntax.
     let value = 0;
-    for (let j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
-      const m = lines[j].match(/\|\s*\$\s*([\d,]+)/);
+    const parts = line.split("||");
+    for (const part of parts.slice(1)) {
+      const m = part.match(/\$\s*(?:\{\{formatnum:)?([\d,]+)/);
       if (m) {
         const n = parseInt(m[1].replace(/,/g, ""));
-        if (n > 20000 && n < 200000) { value = n; break; }
+        if (n > 15000 && n < 150000) { value = n; break; }
+      }
+    }
+    if (!value) {
+      for (let j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
+        const m = lines[j].match(/\$\s*(?:\{\{formatnum:)?([\d,]+)/);
+        if (m) {
+          const n = parseInt(m[1].replace(/,/g, ""));
+          if (n > 15000 && n < 150000) { value = n; break; }
+        }
       }
     }
     if (!value) continue;
@@ -391,20 +402,17 @@ async function fetchWikipediaIncome() {
     results.push({ name: stateName, value });
   }
 
-  // Apply ~22% combined tax deduction (federal ~9% + FICA ~8% + avg state ~5%)
-  // to convert Census gross income to approximate net, matching Eurostat net disposable.
-  results.forEach(r => { r.value = Math.round(r.value * 0.78); });
   results.sort((a, b) => b.value - a.value);
-  console.log(`Wikipedia income: ${results.length} states/territories`);
+  console.log(`Wikipedia per capita income: ${results.length} states/territories`);
   return results;
 }
 
 async function fetchEurostatIncome() {
-  // ilc_di03 returned 413 with old params (indic_il/currency); correct params are statinfo/unit/age/sex.
-  // statinfo=MED_EI: median equivalised income; unit=PPS; age=TOTAL&sex=T: all-population total.
-  console.log("Fetching EU median income from Eurostat ilc_di03…");
-  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ilc_di03" +
-    "?format=JSON&lang=EN&statinfo=MED_EI&unit=PPS&age=TOTAL&sex=T";
+  // nama_10_pc: gross disposable household income per capita (B6G) in PPS per inhabitant (PPS_HAB).
+  // Per-capita national accounts aggregate — directly comparable to Census ACS per capita income.
+  console.log("Fetching EU gross disposable income per capita from Eurostat nama_10_pc…");
+  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_pc" +
+    "?format=JSON&lang=EN&na_item=B6G&unit=PPS_HAB";
   const res = await fetchWithRetry(url);
   const json = await res.json();
 
