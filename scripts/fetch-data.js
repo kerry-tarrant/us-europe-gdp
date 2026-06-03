@@ -340,11 +340,12 @@ async function fetchEurostatElectricity() {
 // ─── Income ───────────────────────────────────────────────────────────────────
 
 async function fetchWikipediaIncome() {
-  // Census ACS per capita income by state (gross, before taxes).
-  console.log("Fetching US per capita income from Wikipedia (Census ACS)…");
+  // BEA per capita personal income by state — from the "Per capita personal income by state"
+  // section of the Wikipedia income page (sourced from FRED/BEA).
+  console.log("Fetching US per capita personal income from Wikipedia (BEA/FRED)…");
   const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
     action: "parse",
-    page: "List_of_U.S._states_and_territories_by_per_capita_income",
+    page: "List_of_U.S._states_and_territories_by_income",
     prop: "wikitext",
     format: "json",
     origin: "*",
@@ -358,13 +359,19 @@ async function fetchWikipediaIncome() {
   const seen = new Set();
   const lines = wikitext.split("\n");
 
+  // Only parse within the "Per capita personal income" section.
+  let inSection = false;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    let stateName = null;
 
-    // Match {{flag|StateName}} or {{flagicon|...}} [[...|StateName]]
+    if (line.includes("Per capita personal income")) { inSection = true; continue; }
+    if (inSection && line.startsWith("==")) break;
+    if (!inSection) continue;
+
     const flagMatch = line.match(/^\|[^|]*\{\{flag\|([^}|]+)\}\}/);
     const iconMatch = line.match(/^\|\s*\{\{flagicon\|[^}]+\}\}\s*\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/);
+    let stateName = null;
     if (flagMatch)      stateName = flagMatch[1].trim();
     else if (iconMatch) stateName = iconMatch[1].trim();
     if (!stateName) continue;
@@ -376,24 +383,13 @@ async function fetchWikipediaIncome() {
 
     if (stateName === "United States" || seen.has(stateName)) continue;
 
-    // Per capita income is the first $X,XXX on the same line (|| separated) or next 1-3 lines.
-    // Also handles {{formatnum:NNNNN}} template syntax.
+    // The 2023 value is on the next line as |$XXX,XXX (or |'''$XXX,XXX''')
     let value = 0;
-    const parts = line.split("||");
-    for (const part of parts.slice(1)) {
-      const m = part.match(/\$\s*(?:\{\{formatnum:)?([\d,]+)/);
+    for (let j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
+      const m = lines[j].match(/\$\s*([\d,]+)/);
       if (m) {
         const n = parseInt(m[1].replace(/,/g, ""));
-        if (n > 15000 && n < 150000) { value = n; break; }
-      }
-    }
-    if (!value) {
-      for (let j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
-        const m = lines[j].match(/\$\s*(?:\{\{formatnum:)?([\d,]+)/);
-        if (m) {
-          const n = parseInt(m[1].replace(/,/g, ""));
-          if (n > 15000 && n < 150000) { value = n; break; }
-        }
+        if (n > 20000 && n < 200000) { value = n; break; }
       }
     }
     if (!value) continue;
@@ -402,17 +398,19 @@ async function fetchWikipediaIncome() {
     results.push({ name: stateName, value });
   }
 
+  // Apply ~22% combined tax deduction to convert gross BEA income to approximate net.
+  results.forEach(r => { r.value = Math.round(r.value * 0.78); });
   results.sort((a, b) => b.value - a.value);
   console.log(`Wikipedia per capita income: ${results.length} states/territories`);
   return results;
 }
 
 async function fetchEurostatIncome() {
-  // nama_10_pc: gross disposable household income per capita (B6G) in PPS per inhabitant (PPS_HAB).
-  // Per-capita national accounts aggregate — directly comparable to Census ACS per capita income.
-  console.log("Fetching EU gross disposable income per capita from Eurostat nama_10_pc…");
-  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nama_10_pc" +
-    "?format=JSON&lang=EN&na_item=B6G&unit=PPS_HAB";
+  // ilc_di03: mean equivalised net disposable income in PPS.
+  // Mean (not median) pairs better with BEA per-capita personal income (a mean measure).
+  console.log("Fetching EU mean equivalised income from Eurostat ilc_di03…");
+  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ilc_di03" +
+    "?format=JSON&lang=EN&statinfo=MEAN_EI&unit=PPS&age=TOTAL&sex=T";
   const res = await fetchWithRetry(url);
   const json = await res.json();
 
