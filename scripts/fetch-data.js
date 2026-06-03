@@ -3,8 +3,8 @@
  *
  * Fetches three metrics for US states and European countries:
  *   1. GDP per capita          — Wikipedia (US) + IMF DataMapper (EU)
- *   2. Electricity per capita  — EIA SEDS HTML table (US) + Eurostat nrg_ind_use + demo_pjan (EU)
- *   3. Median household income — Census ACS (US) + Eurostat ilc_di03 (EU)
+ *   2. Electricity per capita  — EIA SEDS HTML table (US) + Eurostat nrg_cb_e + demo_pjan (EU)
+ *   3. Median household income — Wikipedia (US) + Eurostat ilc_di03 (EU)
  *
  * Writes results to src/data.json. No API keys required.
  */
@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 const DATA_PATH = path.join(__dirname, "../src/data.json");
 const RAW_PATH  = path.join(__dirname, "../data");
 
-// PPS → USD conversion rate (approximate; 1 PPS ≈ 1 EUR ≈ 1.07 USD as of 2023)
+// PPS → USD conversion rate (approximate; 1 PPS ≈ 1.07 USD as of 2023)
 const PPS_TO_USD = 1.07;
 
 // ─── EU country metadata ────────────────────────────────────────────────────
@@ -68,6 +68,17 @@ const EU_COUNTRY_META = {
   UKR: { name: "Ukraine",         flag: "🇺🇦" },
 };
 
+// Eurostat uses alpha-2 codes; Greece uses "EL" not "GR"
+const EUROSTAT_CODE_MAP = {
+  IRL: "IE", LUX: "LU", NOR: "NO", CHE: "CH", DNK: "DK", NLD: "NL",
+  SMR: "SM", ISL: "IS", MLT: "MT", BEL: "BE", AUT: "AT", SWE: "SE",
+  DEU: "DE", AND: "AD", FIN: "FI", FRA: "FR", CYP: "CY", GBR: "GB",
+  ITA: "IT", CZE: "CZ", LTU: "LT", SVN: "SI", ESP: "ES", POL: "PL",
+  HRV: "HR", PRT: "PT", EST: "EE", ROU: "RO", HUN: "HU", SVK: "SK",
+  GRC: "EL", LVA: "LV", BGR: "BG", MNE: "ME", SRB: "RS", MKD: "MK",
+  BIH: "BA", ALB: "AL", XKX: "XK", MDA: "MD", UKR: "UA",
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function fetchWithRetry(url, retries = 3) {
@@ -87,19 +98,18 @@ async function fetchWithRetry(url, retries = 3) {
 
 /**
  * Parse Eurostat JSON-stat format.
- * Returns a map of { [isoCode]: { value, year } } for the latest available year per country.
- * preferredDimValues: hint for non-geo/time dimensions, e.g. { unit: "GWH", nrg_bal: "FC_E" }
+ * Returns a map of { [iso3Code]: { value, year, ...meta } } for the latest available year.
+ * preferredDimValues: hint for non-geo/time dimensions (only needed when URL doesn't filter them).
  */
 function parseEurostatData(json, preferredDimValues = {}) {
-  const dims  = json.id;
-  const sizes = json.size;
+  const dims    = json.id;
+  const sizes   = json.size;
   const dimInfo = json.dimension;
 
   const geoIdx  = dims.indexOf("geo");
   const timeIdx = dims.indexOf("time");
   if (geoIdx === -1 || timeIdx === -1) throw new Error("Eurostat: missing geo or time dimension");
 
-  // Build per-dimension strides for flat-index calculation
   const strides = new Array(dims.length).fill(0);
   strides[dims.length - 1] = 1;
   for (let i = dims.length - 2; i >= 0; i--) {
@@ -108,34 +118,33 @@ function parseEurostatData(json, preferredDimValues = {}) {
 
   const geoCodes  = dimInfo.geo.category.index;
   const timeCodes = dimInfo.time.category.index;
-  const years = Object.keys(timeCodes).map(Number).sort((a, b) => b - a); // newest first
+  const years = Object.keys(timeCodes).map(Number).sort((a, b) => b - a);
 
   const result = {};
 
   for (const [isoCode, meta] of Object.entries(EU_COUNTRY_META)) {
-    const geoPos = geoCodes[isoCode];
+    // Eurostat uses alpha-2 codes; look up via EUROSTAT_CODE_MAP
+    const eurostatCode = EUROSTAT_CODE_MAP[isoCode] ?? isoCode;
+    const geoPos = geoCodes[eurostatCode];
     if (geoPos === undefined) continue;
 
     for (const year of years) {
       const timePos = timeCodes[String(year)];
       if (timePos === undefined) continue;
 
-      // For each non-geo/time dimension: use preferred value, then try all available positions
       const otherDims = dims
         .map((dim, i) => ({ dim, i }))
         .filter(({ dim }) => dim !== "geo" && dim !== "time");
 
-      // Collect candidate positions for each other dimension
-      const dimOptions = otherDims.map(({ dim, i }) => {
+      const dimOptions = otherDims.map(({ dim }) => {
         const codes = dimInfo[dim]?.category?.index ?? {};
         const preferred = preferredDimValues[dim];
         if (preferred !== undefined && codes[preferred] !== undefined) {
           return [codes[preferred]];
         }
-        return Object.values(codes); // try all
+        return Object.values(codes);
       });
 
-      // Iterate through combinations (limited to avoid explosion)
       let found = false;
       const combos = cartesianProduct(dimOptions);
       for (const combo of combos.slice(0, 20)) {
@@ -220,11 +229,11 @@ async function fetchWikipediaStates() {
     const entry = { name: stateName, value: gdp };
     const notes = {
       "District of Columbia": "Federal district",
-      "Puerto Rico":             "Commonwealth",
-      "Guam":                    "Territory",
-      "U.S. Virgin Islands":     "Territory",
-      "Northern Mariana Islands":"Commonwealth",
-      "American Samoa":          "Territory",
+      "Puerto Rico":              "Commonwealth",
+      "Guam":                     "Territory",
+      "U.S. Virgin Islands":      "Territory",
+      "Northern Mariana Islands": "Commonwealth",
+      "American Samoa":           "Territory",
     };
     if (notes[stateName]) entry.note = notes[stateName];
     results.push(entry);
@@ -266,28 +275,27 @@ async function fetchIMF() {
 
 async function fetchEIAElectricity() {
   console.log("Fetching US electricity per capita from EIA SEDS…");
-  // Fetch the ranking table HTML directly
+  // Table C17: columns are rank | total state | total GWH | per-capita state | per-capita kWh | ...
+  // State names are in <th> elements; values in <td>. Per-capita section is cells[3] and cells[4].
   const url = "https://www.eia.gov/state/seds/sep_sum/html/rank_es_capita.html";
   const res = await fetchWithRetry(url);
   const html = await res.text();
 
   const results = [];
-  // Each data row: <tr><td>rank</td><td><a ...>State Name</a></td><td>value</td>...</tr>
-  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-  const stripTags = s => s.replace(/<[^>]+>/g, "").trim();
+  const rowRegex  = /<tr>([\s\S]*?)<\/tr>/gi;
+  const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+  const stripTags = s => s.replace(/<[^>]+>/g, "").replace(/&nbsp;|&#160;/g, " ").trim();
 
   for (const rowMatch of html.matchAll(rowRegex)) {
     const cells = [...rowMatch[1].matchAll(cellRegex)].map(m => stripTags(m[1]));
-    if (cells.length < 3) continue;
+    if (cells.length < 5) continue;
 
-    // Expected: [rank, state_name, kWh_value, ...]
-    const rank = parseInt(cells[0]);
+    // cells[0] = rank, cells[3] = per-capita state name, cells[4] = per-capita kWh
+    const rank  = parseInt(cells[0]);
     if (isNaN(rank) || rank < 1 || rank > 60) continue;
 
-    const name = cells[1].replace(/\*+$/, "").trim();
-    const raw  = cells[2].replace(/,/g, "").trim();
-    const value = parseInt(raw);
+    const name  = cells[3].replace(/\*+$/, "").replace(/\s+/g, " ").trim();
+    const value = parseInt(cells[4].replace(/,/g, ""));
 
     if (!name || isNaN(value) || value < 1000 || value > 100000) continue;
     results.push({ name, value });
@@ -300,32 +308,31 @@ async function fetchEIAElectricity() {
 }
 
 async function fetchEurostatElectricity() {
-  console.log("Fetching EU electricity consumption from Eurostat nrg_ind_use…");
-  // Fetch total final electricity consumption (GWH) for all available countries
-  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nrg_ind_use" +
-    "?format=JSON&lang=EN&nrg_bal=FC_E&siec=E7000&unit=GWH";
+  // nrg_ind_use was retired; nrg_cb_e (complete electricity balance) replaces it.
+  // FC = total final consumption, E7000 = electricity, GWH
+  console.log("Fetching EU electricity consumption from Eurostat nrg_cb_e…");
+  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nrg_cb_e" +
+    "?format=JSON&lang=EN&nrg_bal=FC&siec=E7000&unit=GWH";
   const res = await fetchWithRetry(url);
   const json = await res.json();
 
-  const rawData = parseEurostatData(json, { unit: "GWH", nrg_bal: "FC_E", siec: "E7000" });
+  const rawData = parseEurostatData(json);
 
-  // Also fetch population to convert GWH → kWh per capita
   console.log("Fetching EU population from Eurostat demo_pjan…");
   const popUrl = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/demo_pjan" +
     "?format=JSON&lang=EN&sex=T&age=TOTAL";
   const popRes = await fetchWithRetry(popUrl);
   const popJson = await popRes.json();
-  const popData = parseEurostatData(popJson, { sex: "T", age: "TOTAL" });
+  const popData = parseEurostatData(popJson);
 
   const results = [];
   let latestYear = 0;
 
   for (const [isoCode, entry] of Object.entries(rawData)) {
     const pop = popData[isoCode];
-    if (!pop || !pop.value) { console.warn(`Eurostat elec: no population for ${isoCode}`); continue; }
+    if (!pop?.value) { console.warn(`Eurostat elec: no population for ${isoCode}`); continue; }
 
-    // entry.value is in GWH; pop.value is in persons (demo_pjan uses actual count)
-    // kWh per capita = GWH * 1_000_000 / population
+    // entry.value is GWH; pop.value is persons → kWh per capita
     const kwhPerCapita = Math.round((entry.value * 1_000_000) / pop.value);
     if (kwhPerCapita < 100 || kwhPerCapita > 100_000) {
       console.warn(`Eurostat elec: implausible value for ${isoCode}: ${kwhPerCapita} kWh`);
@@ -343,48 +350,78 @@ async function fetchEurostatElectricity() {
 
 // ─── Income ───────────────────────────────────────────────────────────────────
 
-async function fetchCensusIncome() {
-  console.log("Fetching US median household income from Census ACS…");
-  // `for=state:*` covers the 50 states + DC but not territories.
-  // Puerto Rico (FIPS 72) is fetched separately; other territories lack ACS coverage.
-  const [resStates, resPR] = await Promise.all([
-    fetchWithRetry("https://api.census.gov/data/2023/acs/acs1?get=NAME,B19013_001E&for=state:*"),
-    fetchWithRetry("https://api.census.gov/data/2023/acs/acs1?get=NAME,B19013_001E&for=state:72"),
-  ]);
+async function fetchWikipediaIncome() {
+  // Census ACS API now requires an API key; use Wikipedia which mirrors ACS 2023 data.
+  console.log("Fetching US median household income from Wikipedia (ACS 2023)…");
+  const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
+    action: "parse",
+    page: "List_of_U.S._states_and_territories_by_income",
+    prop: "wikitext",
+    format: "json",
+    origin: "*",
+  });
 
-  const allRows = [
-    ...(await resStates.json()).slice(1),
-    ...(await resPR.json()).slice(1),
-  ];
+  const res = await fetchWithRetry(url);
+  const json = await res.json();
+  const wikitext = json.parse.wikitext["*"];
 
   const results = [];
-  for (const row of allRows) {
-    const [name, incomeStr] = row;
-    const value = parseInt(incomeStr);
-    if (isNaN(value) || value <= 0) continue;
-    results.push({ name: name.replace(/, .*$/, "").trim(), value });
+  const seen = new Set();
+  const lines = wikitext.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    let stateName = null;
+
+    // Match {{flag|StateName}} or {{flagicon|...}} [[...|StateName]]
+    const flagMatch = line.match(/^\|[^|]*\{\{flag\|([^}|]+)\}\}/);
+    const iconMatch = line.match(/^\|\s*\{\{flagicon\|[^}]+\}\}\s*\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/);
+    if (flagMatch)      stateName = flagMatch[1].trim();
+    else if (iconMatch) stateName = iconMatch[1].trim();
+    if (!stateName) continue;
+
+    stateName = stateName
+      .replace("Washington, D.C.", "District of Columbia")
+      .replace("Washington (state)", "Washington")
+      .trim();
+
+    if (stateName === "United States" || seen.has(stateName)) continue;
+
+    // The 2023 value is the first $X,XXX in the next 1-3 lines
+    let value = 0;
+    for (let j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
+      const m = lines[j].match(/\|\s*\$\s*([\d,]+)/);
+      if (m) {
+        const n = parseInt(m[1].replace(/,/g, ""));
+        if (n > 20000 && n < 200000) { value = n; break; }
+      }
+    }
+    if (!value) continue;
+
+    seen.add(stateName);
+    results.push({ name: stateName, value });
   }
 
   results.sort((a, b) => b.value - a.value);
-  console.log(`Census: ${results.length} states/territories`);
+  console.log(`Wikipedia income: ${results.length} states/territories`);
   return results;
 }
 
 async function fetchEurostatIncome() {
+  // ilc_di03 returned 413 with old params (indic_il/currency); correct params are statinfo/unit/age/sex.
+  // statinfo=MED_EI: median equivalised income; unit=PPS; age=TOTAL&sex=T: all-population total.
   console.log("Fetching EU median income from Eurostat ilc_di03…");
-  // Median equivalised net income in PPS
   const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ilc_di03" +
-    "?format=JSON&lang=EN&indic_il=MED_E&currency=PPS";
+    "?format=JSON&lang=EN&statinfo=MED_EI&unit=PPS&age=TOTAL&sex=T";
   const res = await fetchWithRetry(url);
   const json = await res.json();
 
-  const rawData = parseEurostatData(json, { indic_il: "MED_E", currency: "PPS" });
+  const rawData = parseEurostatData(json);
 
   const results = [];
   let latestYear = 0;
 
   for (const [isoCode, entry] of Object.entries(rawData)) {
-    // Convert PPS to USD
     const usd = Math.round(entry.value * PPS_TO_USD);
     if (entry.year > latestYear) latestYear = entry.year;
     results.push({ ...EU_COUNTRY_META[isoCode], value: usd });
@@ -398,7 +435,6 @@ async function fetchEurostatIncome() {
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  // Load existing data.json so we can preserve any metric that fails to fetch
   let existing = {};
   try {
     existing = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
@@ -427,7 +463,7 @@ async function main() {
   // ── Income ────────────────────────────────────────────────────────────────
   let incomeData = existing.income ?? { us: [], eu: [], usYear: null, euYear: null };
   try {
-    const [usIncome, euIncome] = await Promise.all([fetchCensusIncome(), fetchEurostatIncome()]);
+    const [usIncome, euIncome] = await Promise.all([fetchWikipediaIncome(), fetchEurostatIncome()]);
     incomeData = { us: usIncome, eu: euIncome.data, usYear: 2023, euYear: euIncome.year };
   } catch (err) {
     console.error("Income fetch failed — keeping existing data:", err.message);
