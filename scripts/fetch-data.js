@@ -426,7 +426,8 @@ async function fetchEurostatIncome() {
 async function main() {
   let existing = {};
   try {
-    existing = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
+    const raw = fs.readFileSync(DATA_PATH, "utf8").replace(/^﻿/, "");
+    existing = JSON.parse(raw);
   } catch {
     console.log("No existing data.json — starting fresh.");
   }
