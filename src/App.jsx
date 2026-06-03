@@ -5,9 +5,9 @@ import data from "./data.json";
 
 const METRIC_CONFIG = {
   gdp: {
-    label:      "GDP per capita",
+    label:      "GDP (PPP) per capita",
     subtitle:   () => `Economic Comparison · BEA ${data.gdp.usYear} · IMF WEO April ${data.gdp.euYear}`,
-    desc:       "Each state matched to the European country with the nearest GDP per capita. US: nominal USD (BEA). Europe: PPP-adjusted international dollars (IMF).",
+    desc:       "Each state matched to the European country with the nearest GDP (PPP) per capita. Both sides in PPP-adjusted international dollars — US values from BEA (USD ≈ international dollar); European values from IMF WEO.",
     format:     v => `$${v.toLocaleString()}`,
     euFormat:   v => `$${v.toLocaleString()}`,
     tiers: [
@@ -19,17 +19,17 @@ const METRIC_CONFIG = {
     ],
   },
   electricity: {
-    label:    "Electricity per capita",
+    label:    "Total electricity",
     subtitle: () => `Electricity · EIA SEDS · Eurostat${data.electricity.year ? ` ${data.electricity.year}` : ""}`,
-    desc:     "Each state matched to the European country with the nearest electricity consumption per capita (kWh per person). US: EIA State Energy Data System. Europe: Eurostat total final consumption.",
-    format:   v => `${v.toLocaleString()} kWh`,
-    euFormat: v => `${v.toLocaleString()} kWh`,
+    desc:     "Each state matched to the European country with the nearest total electricity consumption (GWh). US: EIA State Energy Data System. Europe: Eurostat nrg_cb_e total final consumption.",
+    format:   v => `${v.toLocaleString()} GWh`,
+    euFormat: v => `${v.toLocaleString()} GWh`,
     tiers: [
-      { min: 20000, color: "#f0c040", label: ">20k kWh" },
-      { min: 14000, color: "#4ade80", label: "14-20k" },
-      { min: 9000,  color: "#38bdf8", label: "9-14k" },
-      { min: 5000,  color: "#f97316", label: "5-9k" },
-      { min: 0,     color: "#f87171", label: "<5k" },
+      { min: 200000, color: "#f0c040", label: ">200k GWh" },
+      { min: 100000, color: "#4ade80", label: "100-200k" },
+      { min: 50000,  color: "#38bdf8", label: "50-100k" },
+      { min: 10000,  color: "#f97316", label: "10-50k" },
+      { min: 0,      color: "#f87171", label: "<10k" },
     ],
   },
   income: {
@@ -145,8 +145,8 @@ export default function App() {
           onChange={e => { setMetric(e.target.value); setSortBy("val_desc"); setSearch(""); }}
           style={{ ...controlBase, cursor: "pointer" }}
         >
-          <option value="gdp">GDP per capita</option>
-          <option value="electricity">Electricity per capita</option>
+          <option value="gdp">GDP (PPP) per capita</option>
+          <option value="electricity">Total electricity</option>
           <option value="income">Median household income</option>
         </select>
 
@@ -288,11 +288,11 @@ export default function App() {
           <strong style={{ color: "#7ab0d0" }}>Methodology</strong><br />
           Each US state is matched to the European country whose value is closest (nearest neighbor). The match is recalculated independently per metric — a state may match a different country depending on which metric is selected. Multiple states can match the same European country.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>GDP per capita</strong><br />
-          US state figures are <em>nominal</em> GDP per capita in USD (BEA, {data.gdp.usYear}). European figures are <em>PPP-adjusted</em> GDP per capita in international dollars (IMF, {data.gdp.euYear} estimate). PPP adjustment makes European incomes look somewhat higher than nominal exchange rates suggest, so this comparison modestly favors Europe. Ireland and Luxembourg are inflated by multinationals booking profits there; DC reflects concentrated federal output relative to a small resident population.<br /><br />
+          <strong style={{ color: "#7ab0d0" }}>GDP (PPP) per capita</strong><br />
+          Both US and European figures are in PPP-adjusted international dollars. US state figures use BEA nominal GDP per capita (BEA, {data.gdp.usYear}); because the US dollar is the reference currency for international dollar PPP calculations, US nominal ≈ PPP. European figures are IMF WEO PPP GDP per capita ({data.gdp.euYear} estimate). Ireland and Luxembourg are inflated by multinationals booking profits there; DC reflects concentrated federal output relative to a small resident population.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>Electricity per capita</strong><br />
-          US figures are total electricity consumption per capita in kWh (EIA State Energy Data System). European figures are total final electricity consumption in GWh (Eurostat <em>nrg_ind_use</em>) divided by population (Eurostat <em>demo_pjan</em>). Both cover all end-use sectors.<br /><br />
+          <strong style={{ color: "#7ab0d0" }}>Total electricity</strong><br />
+          US figures are total electricity consumption in GWh (EIA State Energy Data System, {data.electricity.year}). European figures are total final electricity consumption in GWh (Eurostat <em>nrg_cb_e</em>, {data.electricity.year}). Both cover all end-use sectors. Ukraine figure is 2020 (most recent Eurostat data available); Kosovo is 2023.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>Median household income</strong><br />
           US figures are median household income in 2023 inflation-adjusted dollars, gross (pre-tax), from the Census Bureau ACS 1-Year estimates. European figures are median equivalised net disposable income in PPS (Purchasing Power Standards) from Eurostat ILC-DI03, converted to USD at approximately 1 PPS = $1.07. Because US figures are pre-tax and European figures are post-tax, direct comparison understates the gap between them.<br /><br />
@@ -310,7 +310,7 @@ export default function App() {
           Electricity US:{" "}
           <a href="https://www.eia.gov/state/seds/" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>EIA State Energy Data System</a><br />
           Electricity Europe:{" "}
-          <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_ind_use" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat nrg_ind_use</a><br />
+          <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat nrg_cb_e</a><br />
           Income US:{" "}
           <a href="https://data.census.gov/table/ACSDT1Y2023.B19013" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Census Bureau ACS 2023</a><br />
           Income Europe:{" "}
