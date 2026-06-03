@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-02",
+  "updated": "2026-06-03",
   "gdp": {
     "us": [
       {
@@ -206,6 +206,31 @@
       {
         "name": "Mississippi",
         "value": 53061
+      },
+      {
+        "name": "Puerto Rico",
+        "value": 37000,
+        "note": "Commonwealth"
+      },
+      {
+        "name": "Guam",
+        "value": 38000,
+        "note": "Territory"
+      },
+      {
+        "name": "U.S. Virgin Islands",
+        "value": 36000,
+        "note": "Territory"
+      },
+      {
+        "name": "Northern Mariana Islands",
+        "value": 21000,
+        "note": "Commonwealth"
+      },
+      {
+        "name": "American Samoa",
+        "value": 12000,
+        "note": "Territory"
       }
     ],
     "eu": [
