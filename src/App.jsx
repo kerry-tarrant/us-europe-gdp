@@ -205,7 +205,9 @@ export default function App() {
           const barPct   = (state.value / maxVal) * 100;
           const euBarPct = (state.closest.value / maxVal) * 100;
           const diff     = state.value - state.closest.value;
-          const diffPct  = ((diff / state.closest.value) * 100).toFixed(0);
+          const diffPct  = state.closest.value !== 0
+            ? ((diff / state.closest.value) * 100).toFixed(0)
+            : null;
 
           return (
             <div
@@ -259,9 +261,11 @@ export default function App() {
                     ({state.closest.note})
                   </span>
                 )}
-                <span style={{ fontSize: 12, fontWeight: 600, color: diff > 0 ? "#2ecc71" : "#e74c3c" }}>
-                  {diff > 0 ? "+" : ""}{diffPct}%
-                </span>
+                {diffPct !== null && (
+                  <span style={{ fontSize: 12, fontWeight: 600, color: diff > 0 ? "#2ecc71" : "#e74c3c" }}>
+                    {diff > 0 ? "+" : ""}{diffPct}%
+                  </span>
+                )}
               </div>
 
               {/* Bar tracks */}
