@@ -202,6 +202,7 @@ async function fetchWikipediaStates() {
 
     let stateName = stateMatch[1]
       .replace("Washington (state)", "Washington")
+      .replace("United States Virgin Islands", "U.S. Virgin Islands")
       .replace(" (state)", "")
       .trim();
 
@@ -213,11 +214,19 @@ async function fetchWikipediaStates() {
 
     const raw = perCapitaMatches[perCapitaMatches.length - 1][1].replace(/,/g, "");
     const gdp = parseInt(raw);
-    if (isNaN(gdp) || gdp < 10000 || gdp > 500000) continue;
+    if (isNaN(gdp) || gdp < 5000 || gdp > 500000) continue;
 
     seen.add(stateName);
     const entry = { name: stateName, value: gdp };
-    if (stateName === "District of Columbia") entry.note = "Federal district";
+    const notes = {
+      "District of Columbia": "Federal district",
+      "Puerto Rico":             "Commonwealth",
+      "Guam":                    "Territory",
+      "U.S. Virgin Islands":     "Territory",
+      "Northern Mariana Islands":"Commonwealth",
+      "American Samoa":          "Territory",
+    };
+    if (notes[stateName]) entry.note = notes[stateName];
     results.push(entry);
   }
 
@@ -336,21 +345,28 @@ async function fetchEurostatElectricity() {
 
 async function fetchCensusIncome() {
   console.log("Fetching US median household income from Census ACS…");
-  const url = "https://api.census.gov/data/2023/acs/acs1?get=NAME,B19013_001E&for=state:*";
-  const res = await fetchWithRetry(url);
-  const rows = await res.json();
+  // `for=state:*` covers the 50 states + DC but not territories.
+  // Puerto Rico (FIPS 72) is fetched separately; other territories lack ACS coverage.
+  const [resStates, resPR] = await Promise.all([
+    fetchWithRetry("https://api.census.gov/data/2023/acs/acs1?get=NAME,B19013_001E&for=state:*"),
+    fetchWithRetry("https://api.census.gov/data/2023/acs/acs1?get=NAME,B19013_001E&for=state:72"),
+  ]);
+
+  const allRows = [
+    ...(await resStates.json()).slice(1),
+    ...(await resPR.json()).slice(1),
+  ];
 
   const results = [];
-  for (const row of rows.slice(1)) { // skip header
+  for (const row of allRows) {
     const [name, incomeStr] = row;
     const value = parseInt(incomeStr);
     if (isNaN(value) || value <= 0) continue;
-    // Name is "Alabama" for states (no suffix in ACS1 state-level)
     results.push({ name: name.replace(/, .*$/, "").trim(), value });
   }
 
   results.sort((a, b) => b.value - a.value);
-  console.log(`Census: ${results.length} states`);
+  console.log(`Census: ${results.length} states/territories`);
   return results;
 }
 
