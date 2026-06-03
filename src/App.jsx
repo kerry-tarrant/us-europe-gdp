@@ -21,7 +21,7 @@ const METRIC_CONFIG = {
   electricity: {
     label:    "Total electricity",
     subtitle: () => `Electricity · EIA SEDS · Eurostat${data.electricity.year ? ` ${data.electricity.year}` : ""}`,
-    desc:     "Each state matched to the European country with the nearest total electricity consumption (GWh). US: EIA State Energy Data System. Europe: Eurostat nrg_cb_e total final consumption.",
+    desc:     "Each state matched to the European country with the nearest total electricity consumption (GWh, 2024 annual). US: EIA State Energy Data System. Europe: Eurostat nrg_cb_e total final consumption.",
     format:   v => `${v.toLocaleString()} GWh`,
     euFormat: v => `${v.toLocaleString()} GWh`,
     tiers: [
