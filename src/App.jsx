@@ -33,18 +33,17 @@ const METRIC_CONFIG = {
     ],
   },
   income: {
-    label:      "Median household income",
+    label:      "Median net household income",
     subtitle:   () => `Income · Census ACS ${data.income.usYear ?? "2023"} · Eurostat ILC-DI03 ${data.income.euYear ?? ""}`,
-    desc:       "Each state matched to the European country with the nearest median household income. US: Census ACS gross (pre-tax) household income. Europe: Eurostat median equivalised net income in PPS, converted to USD.",
+    desc:       "Each state matched to the European country with the nearest median net household income. US: Census ACS gross income minus estimated 22% combined taxes (approximate). Europe: Eurostat median equivalised net disposable income in PPS, converted to USD.",
     format:     v => `$${v.toLocaleString()}`,
     euFormat:   v => `$${v.toLocaleString()}`,
-    disclaimer: "US figures are gross (pre-tax) household income. European figures are net disposable income (post-tax, post-transfer) in purchasing power standards. This makes European incomes appear lower relative to the US than a like-for-like comparison would show.",
     tiers: [
-      { min: 80000, color: "#f0c040", label: ">$80k" },
-      { min: 65000, color: "#4ade80", label: "$65-80k" },
-      { min: 50000, color: "#38bdf8", label: "$50-65k" },
-      { min: 35000, color: "#f97316", label: "$35-50k" },
-      { min: 0,     color: "#f87171", label: "<$35k" },
+      { min: 60000, color: "#f0c040", label: ">$60k" },
+      { min: 40000, color: "#4ade80", label: "$40-60k" },
+      { min: 25000, color: "#38bdf8", label: "$25-40k" },
+      { min: 12000, color: "#f97316", label: "$12-25k" },
+      { min: 0,     color: "#f87171", label: "<$12k" },
     ],
   },
 };
@@ -147,7 +146,7 @@ export default function App() {
         >
           <option value="gdp">GDP (PPP) per capita</option>
           <option value="electricity">Total electricity</option>
-          <option value="income">Median household income</option>
+          <option value="income">Net household income</option>
         </select>
 
         <input
@@ -294,8 +293,8 @@ export default function App() {
           <strong style={{ color: "#7ab0d0" }}>Total electricity</strong><br />
           US figures are total electricity consumption in GWh (EIA State Energy Data System, {data.electricity.year}). European figures are total final electricity consumption in GWh (Eurostat <em>nrg_cb_e</em>, {data.electricity.year}). Both cover all end-use sectors. Ukraine figure is 2020 (most recent Eurostat data available); Kosovo is 2023.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>Median household income</strong><br />
-          US figures are median household income in 2023 inflation-adjusted dollars, gross (pre-tax), from the Census Bureau ACS 1-Year estimates. European figures are median equivalised net disposable income in PPS (Purchasing Power Standards) from Eurostat ILC-DI03, converted to USD at approximately 1 PPS = $1.07. Because US figures are pre-tax and European figures are post-tax, direct comparison understates the gap between them.<br /><br />
+          <strong style={{ color: "#7ab0d0" }}>Median net household income</strong><br />
+          US figures are Census ACS 2023 median household income with an approximate 22% combined tax deduction applied (federal income tax ~9%, FICA ~8%, average state income tax ~5%), yielding approximate post-tax net income. European figures are Eurostat median equivalised net disposable income in PPS from ILC-DI03, converted to USD at approximately 1 PPS = $1.07. The US deduction is a national average — actual net income varies by state tax policy and household composition.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>% difference</strong><br />
           Calculated as (US state value − EU country value) / EU country value. Positive means the US state's figure exceeds the matched European country's figure.<br /><br />

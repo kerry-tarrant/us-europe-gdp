@@ -391,6 +391,9 @@ async function fetchWikipediaIncome() {
     results.push({ name: stateName, value });
   }
 
+  // Apply ~22% combined tax deduction (federal ~9% + FICA ~8% + avg state ~5%)
+  // to convert Census gross income to approximate net, matching Eurostat net disposable.
+  results.forEach(r => { r.value = Math.round(r.value * 0.78); });
   results.sort((a, b) => b.value - a.value);
   console.log(`Wikipedia income: ${results.length} states/territories`);
   return results;
