@@ -168,15 +168,6 @@ export default function App() {
         </select>
       </div>
 
-      {/* Income disclaimer */}
-      {metric === "income" && config.disclaimer && (
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 12px" }}>
-          <p style={{ fontSize: 12, color: "#c09050", background: "#0f0a00", border: "1px solid #3a2800", borderRadius: 4, padding: "8px 12px", margin: 0, lineHeight: 1.7 }}>
-            ⚠ {config.disclaimer}
-          </p>
-        </div>
-      )}
-
       {/* No-data state */}
       {!hasData && (
         <div style={{ maxWidth: 900, margin: "48px auto", padding: "0 24px", textAlign: "center" }}>

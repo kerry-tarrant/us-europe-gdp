@@ -4,7 +4,7 @@
  * Fetches three metrics for US states and European countries:
  *   1. GDP per capita          — Wikipedia (US) + IMF DataMapper (EU)
  *   2. Total electricity (GWh)  — EIA SEDS HTML table (US) + Eurostat nrg_cb_e (EU)
- *   3. Gross per capita income  — Wikipedia/Census ACS (US) + Eurostat nama_10_pc (EU)
+ *   3. Gross per capita income  — Wikipedia/BEA per capita personal income (US) + Eurostat ilc_di03 (EU)
  *
  * Writes results to src/data.json. No API keys required.
  */
@@ -362,16 +362,22 @@ async function fetchWikipediaIncome() {
   // Pass 1: find the exact line range of the "Per capita personal income" section.
   // Only trigger on lines that ARE headings (start with =) to avoid false matches in body text.
   let sectionStart = -1;
+  let dataYear = null;
   for (let i = 0; i < lines.length; i++) {
     const t = lines[i].trim();
     if (t.startsWith("=") && t.includes("Per capita personal income")) {
       sectionStart = i + 1;
+      const yearMatch = t.match(/\b(20\d{2})\b/);
+      if (yearMatch) dataYear = parseInt(yearMatch[1]);
       break;
     }
   }
+  if (!dataYear) {
+    const fallback = wikitext.match(/per capita personal income[^\n]*?(\d{4})/i);
+    if (fallback) dataYear = parseInt(fallback[1]);
+  }
   if (sectionStart < 0) {
-    console.warn("Wikipedia income: per-capita section not found — page layout may have changed");
-    return [];
+    throw new Error("Wikipedia income: per-capita section not found — page layout may have changed");
   }
   let sectionEnd = lines.length;
   for (let i = sectionStart; i < lines.length; i++) {
@@ -411,11 +417,13 @@ async function fetchWikipediaIncome() {
     results.push({ name: stateName, value });
   }
 
+  if (results.length < 45) throw new Error(`Wikipedia income: only parsed ${results.length} entries`);
+
   // Apply ~22% combined tax deduction to convert gross BEA income to approximate net.
   results.forEach(r => { r.value = Math.round(r.value * 0.78); });
   results.sort((a, b) => b.value - a.value);
-  console.log(`Wikipedia per capita income: ${results.length} states/territories`);
-  return results;
+  console.log(`Wikipedia per capita income: ${results.length} states/territories. Year: ${dataYear}`);
+  return { data: results, year: dataYear };
 }
 
 async function fetchEurostatIncome() {
@@ -423,7 +431,7 @@ async function fetchEurostatIncome() {
   // Mean (not median) pairs better with BEA per-capita personal income (a mean measure).
   console.log("Fetching EU mean equivalised income from Eurostat ilc_di03…");
   const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ilc_di03" +
-    "?format=JSON&lang=EN&statinfo=MEAN_EI&unit=PPS&age=TOTAL&sex=T";
+    "?format=JSON&lang=EN&indic_il=MEAN_EI&unit=PPS&age=TOTAL&sex=T";
   const res = await fetchWithRetry(url);
   const json = await res.json();
 
@@ -476,7 +484,7 @@ async function main() {
   let incomeData = existing.income ?? { us: [], eu: [], usYear: null, euYear: null };
   try {
     const [usIncome, euIncome] = await Promise.all([fetchWikipediaIncome(), fetchEurostatIncome()]);
-    incomeData = { us: usIncome, eu: euIncome.data, usYear: 2023, euYear: euIncome.year };
+    incomeData = { us: usIncome.data, eu: euIncome.data, usYear: usIncome.year ?? 2023, euYear: euIncome.year };
   } catch (err) {
     console.error("Income fetch failed — keeping existing data:", err.message);
   }
