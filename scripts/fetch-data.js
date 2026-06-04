@@ -359,15 +359,28 @@ async function fetchWikipediaIncome() {
   const seen = new Set();
   const lines = wikitext.split("\n");
 
-  // Only parse within the "Per capita personal income" section.
-  let inSection = false;
-
+  // Pass 1: find the exact line range of the "Per capita personal income" section.
+  // Only trigger on lines that ARE headings (start with =) to avoid false matches in body text.
+  let sectionStart = -1;
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const t = lines[i].trim();
+    if (t.startsWith("=") && t.includes("Per capita personal income")) {
+      sectionStart = i + 1;
+      break;
+    }
+  }
+  if (sectionStart < 0) {
+    console.warn("Wikipedia income: per-capita section not found — page layout may have changed");
+    return [];
+  }
+  let sectionEnd = lines.length;
+  for (let i = sectionStart; i < lines.length; i++) {
+    if (lines[i].trim().startsWith("==")) { sectionEnd = i; break; }
+  }
 
-    if (line.includes("Per capita personal income")) { inSection = true; continue; }
-    if (inSection && line.startsWith("==")) break;
-    if (!inSection) continue;
+  // Pass 2: parse state rows within that section only.
+  for (let i = sectionStart; i < sectionEnd; i++) {
+    const line = lines[i].trim();
 
     const flagMatch = line.match(/^\|[^|]*\{\{flag\|([^}|]+)\}\}/);
     const iconMatch = line.match(/^\|\s*\{\{flagicon\|[^}]+\}\}\s*\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/);
@@ -385,7 +398,7 @@ async function fetchWikipediaIncome() {
 
     // The 2023 value is on the next line as |$XXX,XXX (or |'''$XXX,XXX''')
     let value = 0;
-    for (let j = i + 1; j <= Math.min(i + 3, lines.length - 1); j++) {
+    for (let j = i + 1; j <= Math.min(i + 3, sectionEnd - 1); j++) {
       const m = lines[j].match(/\$\s*([\d,]+)/);
       if (m) {
         const n = parseInt(m[1].replace(/,/g, ""));
