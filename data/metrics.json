@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-01",
+  "updated": "2026-08-01",
   "gdp": {
     "us": [
       {
@@ -756,7 +756,7 @@
       {
         "name": "Serbia",
         "flag": "🇷🇸",
-        "value": 30871
+        "value": 31304
       },
       {
         "name": "Slovakia",
@@ -786,7 +786,7 @@
       {
         "name": "Bosnia & Herz.",
         "flag": "🇧🇦",
-        "value": 11129
+        "value": 11153
       },
       {
         "name": "Albania",
@@ -804,14 +804,14 @@
         "value": 7030
       },
       {
+        "name": "North Macedonia",
+        "flag": "🇲🇰",
+        "value": 6087
+      },
+      {
         "name": "Luxembourg",
         "flag": "🇱🇺",
         "value": 6006
-      },
-      {
-        "name": "North Macedonia",
-        "flag": "🇲🇰",
-        "value": 5700
       },
       {
         "name": "Cyprus",
