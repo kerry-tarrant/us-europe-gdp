@@ -245,16 +245,6 @@
         "flag": "🇱🇺"
       },
       {
-        "name": "Norway",
-        "value": 115548,
-        "flag": "🇳🇴"
-      },
-      {
-        "name": "Switzerland",
-        "value": 105680,
-        "flag": "🇨🇭"
-      },
-      {
         "name": "Denmark",
         "value": 89667,
         "flag": "🇩🇰"
@@ -263,16 +253,6 @@
         "name": "Netherlands",
         "value": 87773,
         "flag": "🇳🇱"
-      },
-      {
-        "name": "San Marino",
-        "value": 87141,
-        "flag": "🇸🇲"
-      },
-      {
-        "name": "Iceland",
-        "value": 82730,
-        "flag": "🇮🇸"
       },
       {
         "name": "Malta",
@@ -300,11 +280,6 @@
         "flag": "🇩🇪"
       },
       {
-        "name": "Andorra",
-        "value": 75988,
-        "flag": "🇦🇩"
-      },
-      {
         "name": "Finland",
         "value": 68861,
         "flag": "🇫🇮"
@@ -318,11 +293,6 @@
         "name": "Cyprus",
         "value": 67796,
         "flag": "🇨🇾"
-      },
-      {
-        "name": "United Kingdom",
-        "value": 67585,
-        "flag": "🇬🇧"
       },
       {
         "name": "Italy",
@@ -398,46 +368,6 @@
         "name": "Bulgaria",
         "value": 45642,
         "flag": "🇧🇬"
-      },
-      {
-        "name": "Montenegro",
-        "value": 36333,
-        "flag": "🇲🇪"
-      },
-      {
-        "name": "Serbia",
-        "value": 34863,
-        "flag": "🇷🇸"
-      },
-      {
-        "name": "North Macedonia",
-        "value": 31746,
-        "flag": "🇲🇰"
-      },
-      {
-        "name": "Albania",
-        "value": 25247,
-        "flag": "🇦🇱"
-      },
-      {
-        "name": "Bosnia & Herz.",
-        "value": 24123,
-        "flag": "🇧🇦"
-      },
-      {
-        "name": "Ukraine",
-        "value": 22443,
-        "flag": "🇺🇦"
-      },
-      {
-        "name": "Kosovo",
-        "value": 21799,
-        "flag": "🇽🇰"
-      },
-      {
-        "name": "Moldova",
-        "value": 21170,
-        "flag": "🇲🇩"
       }
     ],
     "usYear": 2024,
@@ -677,19 +607,9 @@
         "value": 152808
       },
       {
-        "name": "Norway",
-        "flag": "🇳🇴",
-        "value": 129696
-      },
-      {
         "name": "Sweden",
         "flag": "🇸🇪",
         "value": 122706
-      },
-      {
-        "name": "Ukraine",
-        "flag": "🇺🇦",
-        "value": 116930
       },
       {
         "name": "Netherlands",
@@ -753,19 +673,9 @@
         "value": 32527
       },
       {
-        "name": "Serbia",
-        "flag": "🇷🇸",
-        "value": 31304
-      },
-      {
         "name": "Slovakia",
         "flag": "🇸🇰",
         "value": 22122
-      },
-      {
-        "name": "Iceland",
-        "flag": "🇮🇸",
-        "value": 18486
       },
       {
         "name": "Croatia",
@@ -783,16 +693,6 @@
         "value": 11767
       },
       {
-        "name": "Bosnia & Herz.",
-        "flag": "🇧🇦",
-        "value": 11153
-      },
-      {
-        "name": "Albania",
-        "flag": "🇦🇱",
-        "value": 7410
-      },
-      {
         "name": "Latvia",
         "flag": "🇱🇻",
         "value": 7167
@@ -801,11 +701,6 @@
         "name": "Estonia",
         "flag": "🇪🇪",
         "value": 7030
-      },
-      {
-        "name": "North Macedonia",
-        "flag": "🇲🇰",
-        "value": 6087
       },
       {
         "name": "Luxembourg",
@@ -818,24 +713,9 @@
         "value": 5654
       },
       {
-        "name": "Kosovo",
-        "flag": "🇽🇰",
-        "value": 5470
-      },
-      {
-        "name": "Moldova",
-        "flag": "🇲🇩",
-        "value": 4275
-      },
-      {
         "name": "Malta",
         "flag": "🇲🇹",
         "value": 2970
-      },
-      {
-        "name": "Montenegro",
-        "flag": "🇲🇪",
-        "value": 2932
       }
     ],
     "year": 2025
@@ -1050,19 +930,9 @@
         "value": 48072
       },
       {
-        "name": "Norway",
-        "flag": "🇳🇴",
-        "value": 38907
-      },
-      {
         "name": "Austria",
         "flag": "🇦🇹",
         "value": 37525
-      },
-      {
-        "name": "Switzerland",
-        "flag": "🇨🇭",
-        "value": 37241
       },
       {
         "name": "Netherlands",
@@ -1124,11 +994,6 @@
         "name": "Spain",
         "flag": "🇪🇸",
         "value": 27009
-      },
-      {
-        "name": "Iceland",
-        "flag": "🇮🇸",
-        "value": 26440
       },
       {
         "name": "Slovenia",
@@ -1194,31 +1059,6 @@
         "name": "Romania",
         "flag": "🇷🇴",
         "value": 14705
-      },
-      {
-        "name": "Serbia",
-        "flag": "🇷🇸",
-        "value": 14056
-      },
-      {
-        "name": "Montenegro",
-        "flag": "🇲🇪",
-        "value": 10559
-      },
-      {
-        "name": "North Macedonia",
-        "flag": "🇲🇰",
-        "value": 10540
-      },
-      {
-        "name": "Albania",
-        "flag": "🇦🇱",
-        "value": 7419
-      },
-      {
-        "name": "Kosovo",
-        "flag": "🇽🇰",
-        "value": 5413
       }
     ],
     "usYear": 2023,

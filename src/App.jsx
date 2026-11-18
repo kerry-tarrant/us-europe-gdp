@@ -7,7 +7,7 @@ const METRIC_CONFIG = {
   gdp: {
     label:      "GDP (PPP) per capita",
     subtitle:   () => `Economic Comparison · BEA ${data.gdp.usYear} · IMF WEO April ${data.gdp.euYear}`,
-    desc:       "Each state matched to the European country with the nearest GDP (PPP) per capita. Both sides in PPP-adjusted international dollars — US values from BEA (USD ≈ international dollar); European values from IMF WEO.",
+    desc:       "Each state matched to the EU member state with the nearest GDP (PPP) per capita. Both sides in PPP-adjusted international dollars — US values from BEA (USD ≈ international dollar); EU values from IMF WEO.",
     format:     v => `$${v.toLocaleString()}`,
     euFormat:   v => `$${v.toLocaleString()}`,
     tiers: [
@@ -21,7 +21,7 @@ const METRIC_CONFIG = {
   electricity: {
     label:    "Total electricity",
     subtitle: () => `Electricity · EIA SEDS · Eurostat${data.electricity.year ? ` ${data.electricity.year}` : ""}`,
-    desc:     "Each state matched to the European country with the nearest total electricity consumption (GWh, 2024 annual). US: EIA State Energy Data System. Europe: Eurostat nrg_cb_e total final consumption.",
+    desc:     "Each state matched to the EU member state with the nearest total electricity consumption (GWh, 2024 annual). US: EIA State Energy Data System. EU: Eurostat nrg_cb_e total final consumption.",
     format:   v => `${v.toLocaleString()} GWh`,
     euFormat: v => `${v.toLocaleString()} GWh`,
     tiers: [
@@ -35,7 +35,7 @@ const METRIC_CONFIG = {
   income: {
     label:      "Per capita net income",
     subtitle:   () => `Income · BEA ${data.income.usYear ?? "2023"} · Eurostat ILC-DI03 ${data.income.euYear ?? ""}`,
-    desc:       "Each state matched to the European country with the nearest per capita net income. US: BEA per capita personal income minus estimated 22% combined taxes. Europe: Eurostat mean equivalised net disposable income in PPS, converted to USD at ~1 PPS = $1.07.",
+    desc:       "Each state matched to the EU member state with the nearest per capita net income. US: BEA per capita personal income minus estimated 22% combined taxes. EU: Eurostat mean equivalised net disposable income in PPS, converted to USD at ~1 PPS = $1.07.",
     format:     v => `$${v.toLocaleString()}`,
     euFormat:   v => `$${v.toLocaleString()}`,
     tiers: [
@@ -129,7 +129,7 @@ export default function App() {
             {config.subtitle()}
           </div>
           <h1 style={{ fontSize: "clamp(22px, 4vw, 36px)", fontWeight: 700, color: "#e8f4ff", margin: "0 0 8px", letterSpacing: "-0.02em" }}>
-            US States vs. European Nations
+            US States vs. EU Member States
           </h1>
           <p style={{ fontSize: 13, color: "#5a8ab0", margin: 0, lineHeight: 1.6, maxWidth: 600 }}>
             {config.desc}
@@ -276,16 +276,16 @@ export default function App() {
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 24px 32px", borderTop: "1px solid #0d1f31" }}>
         <p style={{ fontSize: 12, color: "#5a8ab0", lineHeight: 1.9, margin: 0 }}>
           <strong style={{ color: "#7ab0d0" }}>Methodology</strong><br />
-          Each US state is matched to the European country whose value is closest (nearest neighbor). The match is recalculated independently per metric — a state may match a different country depending on which metric is selected. Multiple states can match the same European country.<br /><br />
+          Each US state is matched to the EU member state whose value is closest (nearest neighbor). The match is recalculated independently per metric — a state may match a different EU member state depending on which metric is selected. Multiple states can match the same EU country.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>GDP (PPP) per capita</strong><br />
-          Both US and European figures are in PPP-adjusted international dollars. US state figures use BEA nominal GDP per capita (BEA, {data.gdp.usYear}); because the US dollar is the reference currency for international dollar PPP calculations, US nominal ≈ PPP. European figures are IMF WEO PPP GDP per capita ({data.gdp.euYear} estimate). Ireland and Luxembourg are inflated by multinationals booking profits there; DC reflects concentrated federal output relative to a small resident population.<br /><br />
+          Both US and EU figures are in PPP-adjusted international dollars. US state figures use BEA nominal GDP per capita (BEA, {data.gdp.usYear}); because the US dollar is the reference currency for international dollar PPP calculations, US nominal ≈ PPP. EU figures are IMF WEO PPP GDP per capita ({data.gdp.euYear} estimate). Ireland and Luxembourg are inflated by multinationals booking profits there; DC reflects concentrated federal output relative to a small resident population.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>Total electricity</strong><br />
-          US figures are total electricity consumption in GWh (EIA State Energy Data System, {data.electricity.year}). European figures are total final electricity consumption in GWh (Eurostat <em>nrg_cb_e</em>, {data.electricity.year}). Both cover all end-use sectors. Ukraine figure is 2020 (most recent Eurostat data available); Kosovo is 2023.<br /><br />
+          US figures are total electricity consumption in GWh (EIA State Energy Data System, {data.electricity.year}). EU figures are total final electricity consumption in GWh (Eurostat <em>nrg_cb_e</em>, {data.electricity.year}). Both cover all end-use sectors.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>Per capita net income</strong><br />
-          US figures are BEA per capita personal income (gross) with an estimated 22% combined tax deduction (federal ~9%, FICA ~8%, average state ~5%) to approximate net. European figures are Eurostat mean equivalised net disposable income in PPS from ILC-DI03, converted to USD at approximately 1 PPS = $1.07. EU values use the OECD equivalence scale (adjusts for household size), so they represent income per equivalent adult rather than strict per-capita — slightly higher than a simple per-person average would be.<br /><br />
+          US figures are BEA per capita personal income (gross) with an estimated 22% combined tax deduction (federal ~9%, FICA ~8%, average state ~5%) to approximate net. EU figures are Eurostat mean equivalised net disposable income in PPS from ILC-DI03, converted to USD at approximately 1 PPS = $1.07. EU values use the OECD equivalence scale (adjusts for household size), so they represent income per equivalent adult rather than strict per-capita — slightly higher than a simple per-person average would be.<br /><br />
 
           <strong style={{ color: "#7ab0d0" }}>% difference</strong><br />
           Calculated as (US state value − EU country value) / EU country value. Positive means the US state's figure exceeds the matched European country's figure.<br /><br />
@@ -294,16 +294,16 @@ export default function App() {
           GDP US:{" "}
           <a href="https://www.bea.gov/data/gdp/gdp-state" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Bureau of Economic Analysis</a>{" "}·{" "}
           <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_GDP" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia</a><br />
-          GDP Europe:{" "}
+          GDP EU:{" "}
           <a href="https://data.imf.org/en/datasets/IMF.RES:WEO" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>IMF World Economic Outlook</a>{" "}·{" "}
           <a href="https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(PPP)_per_capita" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia</a><br />
           Electricity US:{" "}
           <a href="https://www.eia.gov/state/seds/" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>EIA State Energy Data System</a><br />
-          Electricity Europe:{" "}
+          Electricity EU:{" "}
           <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat nrg_cb_e</a><br />
           Income US:{" "}
           <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_income" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia · BEA per capita personal income</a><br />
-          Income Europe:{" "}
+          Income EU:{" "}
           <a href="https://ec.europa.eu/eurostat/databrowser/view/ilc_di03" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat ILC-DI03</a>
         </p>
       </div>
