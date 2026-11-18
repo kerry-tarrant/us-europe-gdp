@@ -1,54 +1,83 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import data from "./data.json";
-
-// ─── Per-metric configuration ─────────────────────────────────────────────────
 
 const METRIC_CONFIG = {
   gdp: {
-    label:      "GDP (PPP) per capita",
-    subtitle:   () => `Economic Comparison · BEA ${data.gdp.usYear} · IMF WEO April ${data.gdp.euYear}`,
-    desc:       "Each state matched to the EU member state with the nearest GDP (PPP) per capita. Both sides in PPP-adjusted international dollars — US values from BEA (USD ≈ international dollar); EU values from IMF WEO.",
-    format:     v => `$${v.toLocaleString()}`,
-    euFormat:   v => `$${v.toLocaleString()}`,
+    label: "GDP / capita",
+    fullLabel: "GDP (PPP) per capita",
+    subtitle: () => `BEA ${data.gdp.usYear} · IMF WEO ${data.gdp.euYear}`,
+    desc: "Each state matched to the EU member state with the nearest GDP (PPP) per capita. Both sides in PPP-adjusted international dollars — US from BEA; EU from IMF WEO.",
+    format: v => `$${v.toLocaleString()}`,
+    euFormat: v => `$${v.toLocaleString()}`,
     tiers: [
-      { min: 100000, color: "#f0c040", label: ">$100k" },
-      { min: 80000,  color: "#4ade80", label: "$80-100k" },
-      { min: 60000,  color: "#38bdf8", label: "$60-80k" },
-      { min: 40000,  color: "#f97316", label: "$40-60k" },
-      { min: 0,      color: "#f87171", label: "<$40k" },
+      { min: 100000, color: "#f59e0b", label: ">$100k" },
+      { min: 80000,  color: "#10b981", label: "$80–100k" },
+      { min: 60000,  color: "#3b82f6", label: "$60–80k" },
+      { min: 40000,  color: "#f97316", label: "$40–60k" },
+      { min: 0,      color: "#ef4444", label: "<$40k" },
     ],
   },
   electricity: {
-    label:    "Total electricity",
-    subtitle: () => `Electricity · EIA SEDS · Eurostat${data.electricity.year ? ` ${data.electricity.year}` : ""}`,
-    desc:     "Each state matched to the EU member state with the nearest total electricity consumption (GWh, 2024 annual). US: EIA State Energy Data System. EU: Eurostat nrg_cb_e total final consumption.",
-    format:   v => `${v.toLocaleString()} GWh`,
+    label: "Electricity",
+    fullLabel: "Total electricity",
+    subtitle: () => `EIA SEDS · Eurostat${data.electricity.year ? ` ${data.electricity.year}` : ""}`,
+    desc: "Total annual electricity consumption in GWh. US: EIA State Energy Data System. EU: Eurostat nrg_cb_e total final consumption.",
+    format: v => `${v.toLocaleString()} GWh`,
     euFormat: v => `${v.toLocaleString()} GWh`,
     tiers: [
-      { min: 200000, color: "#f0c040", label: ">200k GWh" },
-      { min: 100000, color: "#4ade80", label: "100-200k" },
-      { min: 50000,  color: "#38bdf8", label: "50-100k" },
-      { min: 10000,  color: "#f97316", label: "10-50k" },
-      { min: 0,      color: "#f87171", label: "<10k" },
+      { min: 200000, color: "#f59e0b", label: ">200k GWh" },
+      { min: 100000, color: "#10b981", label: "100–200k" },
+      { min: 50000,  color: "#3b82f6", label: "50–100k" },
+      { min: 10000,  color: "#f97316", label: "10–50k" },
+      { min: 0,      color: "#ef4444", label: "<10k" },
     ],
   },
-  income: {
-    label:      "Per capita net income",
-    subtitle:   () => `Income · BEA ${data.income.usYear ?? "2023"} · Eurostat ILC-DI03 ${data.income.euYear ?? ""}`,
-    desc:       "Each state matched to the EU member state with the nearest per capita net income. US: BEA per capita personal income minus estimated 22% combined taxes. EU: Eurostat mean equivalised net disposable income in PPS, converted to USD at ~1 PPS = $1.07.",
-    format:     v => `$${v.toLocaleString()}`,
-    euFormat:   v => `$${v.toLocaleString()}`,
+  education: {
+    label: "Education",
+    fullLabel: "Educational attainment",
+    subtitle: () => `ACS${data.education?.usYear ? ` ${data.education.usYear}` : ""} · Eurostat${data.education?.euYear ? ` ${data.education.euYear}` : ""}`,
+    desc: "Share of adults aged 25–64 with a bachelor's degree or higher. US: Census Bureau American Community Survey. EU: Eurostat edat_lfse_03 (ISCED 5–8 tertiary attainment).",
+    format: v => `${v}%`,
+    euFormat: v => `${v}%`,
     tiers: [
-      { min: 55000, color: "#f0c040", label: ">$55k" },
-      { min: 40000, color: "#4ade80", label: "$40-55k" },
-      { min: 25000, color: "#38bdf8", label: "$25-40k" },
-      { min: 14000, color: "#f97316", label: "$14-25k" },
-      { min: 0,     color: "#f87171", label: "<$14k" },
+      { min: 50, color: "#f59e0b", label: ">50%" },
+      { min: 40, color: "#10b981", label: "40–50%" },
+      { min: 30, color: "#3b82f6", label: "30–40%" },
+      { min: 20, color: "#f97316", label: "20–30%" },
+      { min: 0,  color: "#ef4444", label: "<20%" },
+    ],
+  },
+  hightech: {
+    label: "High-tech",
+    fullLabel: "High-tech employment",
+    subtitle: () => `BLS OES · Eurostat${data.hightech?.year ? ` ${data.hightech.year}` : ""}`,
+    desc: "Share of workforce in computer, mathematical, and high-tech knowledge sectors. US: BLS OES computer & mathematical occupations (SOC 15-0000) per 1,000 jobs ÷ 10. EU: Eurostat htec_emp_nat2 (high-tech manufacturing and knowledge-intensive services).",
+    format: v => `${v}%`,
+    euFormat: v => `${v}%`,
+    tiers: [
+      { min: 8, color: "#f59e0b", label: ">8%" },
+      { min: 5, color: "#10b981", label: "5–8%" },
+      { min: 3, color: "#3b82f6", label: "3–5%" },
+      { min: 1, color: "#f97316", label: "1–3%" },
+      { min: 0, color: "#ef4444", label: "<1%" },
+    ],
+  },
+  patents: {
+    label: "Patents",
+    fullLabel: "Patent applications",
+    subtitle: () => `USPTO · EPO${data.patents?.year ? ` ${data.patents.year}` : ""}`,
+    desc: "Patent applications per million residents. US: USPTO utility patent applications by state of inventor. EU: Eurostat pat_ep_rtot (EPO patent applications per million inhabitants).",
+    format: v => `${v.toLocaleString()}/M`,
+    euFormat: v => `${v.toLocaleString()}/M`,
+    tiers: [
+      { min: 1000, color: "#f59e0b", label: ">1,000/M" },
+      { min: 400,  color: "#10b981", label: "400–1,000" },
+      { min: 100,  color: "#3b82f6", label: "100–400" },
+      { min: 20,   color: "#f97316", label: "20–100" },
+      { min: 0,    color: "#ef4444", label: "<20" },
     ],
   },
 };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getTierColor(value, tiers) {
   for (const tier of tiers) {
@@ -64,45 +93,40 @@ function findClosestCountry(stateValue, euData) {
   );
 }
 
-// ─── Shared input / select styles ────────────────────────────────────────────
-
-const controlBase = {
-  background:  "#0d1f31",
-  border:      "1px solid #1a3a5c",
-  borderRadius: 4,
-  padding:     "8px 12px",
-  color:       "#c8d8e8",
-  fontFamily:  "inherit",
-  fontSize:    13,
-};
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function App() {
-  const [metric,    setMetric]    = useState("gdp");
-  const [sortBy,    setSortBy]    = useState("val_desc");
-  const [search,    setSearch]    = useState("");
+  const [metric, setMetric] = useState("gdp");
+  const [sortBy, setSortBy] = useState("val_desc");
+  const [search, setSearch] = useState("");
   const [highlight, setHighlight] = useState(null);
+  const [theme, setTheme] = useState(() => {
+    try {
+      const stored = localStorage.getItem("theme");
+      if (stored === "light" || stored === "dark") return stored;
+    } catch {}
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
 
-  const config     = METRIC_CONFIG[metric];
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("theme", theme); } catch {}
+  }, [theme]);
+
+  const config = METRIC_CONFIG[metric];
   const metricData = data[metric];
-  const hasData    = metricData?.us?.length > 0 && metricData?.eu?.length > 0;
+  const hasData = metricData?.us?.length > 0 && metricData?.eu?.length > 0;
 
   const maxVal = useMemo(() => {
     if (!hasData) return 1;
-    const all = [...metricData.us, ...metricData.eu].map(d => d.value);
-    return Math.max(...all) * 1.05;
+    return Math.max(...metricData.us.map(d => d.value), ...metricData.eu.map(d => d.value)) * 1.05;
   }, [metric, hasData]);
 
   const filtered = useMemo(() => {
     if (!hasData) return [];
-
     let list = metricData.us.map(state => ({
       ...state,
-      closest:    findClosestCountry(state.value, metricData.eu),
-      tierColor:  getTierColor(state.value, config.tiers),
+      closest: findClosestCountry(state.value, metricData.eu),
+      tierColor: getTierColor(state.value, config.tiers),
     }));
-
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(s =>
@@ -110,94 +134,139 @@ export default function App() {
         s.closest.name.toLowerCase().includes(q)
       );
     }
-
-    if (sortBy === "val_desc")  list.sort((a, b) => b.value - a.value);
-    if (sortBy === "val_asc")   list.sort((a, b) => a.value - b.value);
-    if (sortBy === "alpha_az")  list.sort((a, b) => a.name.localeCompare(b.name));
-    if (sortBy === "alpha_za")  list.sort((a, b) => b.name.localeCompare(a.name));
-
+    if (sortBy === "val_desc") list.sort((a, b) => b.value - a.value);
+    if (sortBy === "val_asc")  list.sort((a, b) => a.value - b.value);
+    if (sortBy === "alpha_az") list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortBy === "alpha_za") list.sort((a, b) => b.name.localeCompare(a.name));
     return list;
   }, [metric, sortBy, search, hasData]);
 
-  return (
-    <div style={{ fontFamily: "'Courier New', monospace", background: "#080d12", minHeight: "100vh", color: "#c8d8e8", padding: 0 }}>
+  const isDark = theme === "dark";
 
-      {/* Header */}
-      <div style={{ background: "linear-gradient(180deg, #0a1929 0%, #080d12 100%)", borderBottom: "1px solid #1a3a5c", padding: "32px 24px 24px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <div style={{ fontSize: 11, letterSpacing: "0.2em", color: "#4a7fa8", marginBottom: 8, textTransform: "uppercase" }}>
-            {config.subtitle()}
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text)" }}>
+
+      {/* Sticky header */}
+      <header style={{
+        position: "sticky", top: 0, zIndex: 100,
+        background: "var(--surface)",
+        borderBottom: "1px solid var(--border)",
+        boxShadow: "var(--shadow)",
+      }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px" }}>
+
+          {/* Title row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0 10px" }}>
+            <div style={{ minWidth: 0 }}>
+              <h1 style={{ margin: 0, fontSize: "clamp(15px, 3vw, 21px)", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                US States vs. EU Member States
+              </h1>
+              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 2 }}>
+                {config.fullLabel} · {config.subtitle()}
+              </div>
+            </div>
+            <button
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              style={{
+                background: "var(--surface2)", border: "1px solid var(--border)",
+                borderRadius: 8, width: 36, height: 36,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "var(--text2)", fontSize: 15,
+                flexShrink: 0, marginLeft: 12, transition: "background 0.15s",
+                fontFamily: "inherit",
+              }}
+            >
+              <i className={isDark ? "fas fa-sun" : "fas fa-moon"} />
+            </button>
           </div>
-          <h1 style={{ fontSize: "clamp(22px, 4vw, 36px)", fontWeight: 700, color: "#e8f4ff", margin: "0 0 8px", letterSpacing: "-0.02em" }}>
-            US States vs. EU Member States
-          </h1>
-          <p style={{ fontSize: 13, color: "#5a8ab0", margin: 0, lineHeight: 1.6, maxWidth: 600 }}>
-            {config.desc}
-          </p>
+
+          {/* Metric tab pills */}
+          <div style={{ display: "flex", gap: 4, paddingBottom: 12, overflowX: "auto", scrollbarWidth: "none" }}>
+            {Object.entries(METRIC_CONFIG).map(([key, cfg]) => (
+              <button
+                key={key}
+                onClick={() => { setMetric(key); setSortBy("val_desc"); setSearch(""); }}
+                style={{
+                  padding: "5px 12px", borderRadius: 6,
+                  border: "1px solid",
+                  borderColor: metric === key ? "var(--accent)" : "var(--border)",
+                  background: metric === key ? "var(--accent-muted)" : "transparent",
+                  color: metric === key ? "var(--accent)" : "var(--text2)",
+                  fontSize: 12, fontWeight: metric === key ? 600 : 400,
+                  cursor: "pointer", whiteSpace: "nowrap",
+                  transition: "all 0.15s", fontFamily: "inherit",
+                }}
+              >
+                {cfg.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Controls */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "16px 24px", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <select
-          value={metric}
-          onChange={e => { setMetric(e.target.value); setSortBy("val_desc"); setSearch(""); }}
-          style={{ ...controlBase, cursor: "pointer" }}
-        >
-          <option value="gdp">GDP (PPP) per capita</option>
-          <option value="electricity">Total electricity</option>
-          <option value="income">Per capita net income</option>
-        </select>
-
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "12px 20px", display: "flex", gap: 8 }}>
         <input
           placeholder="Search state or country…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ ...controlBase, flex: "1 1 180px", outline: "none" }}
+          style={{
+            flex: "1 1 180px",
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 6, padding: "7px 12px",
+            color: "var(--text)", fontFamily: "inherit", fontSize: 13, outline: "none",
+          }}
         />
-
         <select
           value={sortBy}
           onChange={e => setSortBy(e.target.value)}
-          style={{ ...controlBase, cursor: "pointer" }}
+          style={{
+            background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 6, padding: "7px 10px",
+            color: "var(--text2)", fontFamily: "inherit", fontSize: 13,
+            cursor: "pointer", outline: "none",
+          }}
         >
-          <option value="val_desc">↓ Highest first</option>
-          <option value="val_asc">↑ Lowest first</option>
+          <option value="val_desc">↓ Highest</option>
+          <option value="val_asc">↑ Lowest</option>
           <option value="alpha_az">A → Z</option>
           <option value="alpha_za">Z → A</option>
         </select>
       </div>
 
-      {/* No-data state */}
-      {!hasData && (
-        <div style={{ maxWidth: 900, margin: "48px auto", padding: "0 24px", textAlign: "center" }}>
-          <p style={{ fontSize: 14, color: "#3a5a7a" }}>
-            Data not yet available — populates on the 1st of each month.
-          </p>
-        </div>
-      )}
-
       {/* Legend */}
       {hasData && (
-        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 16px", display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 10px", display: "flex", gap: 12, flexWrap: "wrap" }}>
           {config.tiers.map(tier => (
-            <div key={tier.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#a0b8cc" }}>
-              <div style={{ width: 10, height: 10, background: tier.color, borderRadius: 2 }} />
+            <div key={tier.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--text2)" }}>
+              <div style={{ width: 8, height: 8, background: tier.color, borderRadius: 2, flexShrink: 0 }} />
               {tier.label}
             </div>
           ))}
         </div>
       )}
 
-      {/* List */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 24px 40px" }}>
+      {/* No-data state */}
+      {!hasData && (
+        <div style={{ maxWidth: 900, margin: "60px auto", padding: "0 20px", textAlign: "center" }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
+          <p style={{ fontSize: 14, color: "var(--text3)", margin: 0 }}>
+            Data for this metric will populate on the next scheduled update.
+          </p>
+        </div>
+      )}
+
+      {/* Rows */}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 20px 40px", display: "flex", flexDirection: "column", gap: 2 }}>
         {filtered.map((state, i) => {
           const barPct   = (state.value / maxVal) * 100;
           const euBarPct = (state.closest.value / maxVal) * 100;
           const diff     = state.value - state.closest.value;
           const diffPct  = state.closest.value !== 0
-            ? ((diff / state.closest.value) * 100).toFixed(0)
+            ? Math.round((diff / state.closest.value) * 100)
             : null;
+          const isPos = diff > 0;
 
           return (
             <div
@@ -205,66 +274,68 @@ export default function App() {
               onMouseEnter={() => setHighlight(state.name)}
               onMouseLeave={() => setHighlight(null)}
               style={{
-                marginBottom: 3,
-                padding: "12px 14px",
-                borderRadius: 4,
-                border: `1px solid ${highlight === state.name ? "#1a3a5c" : "transparent"}`,
-                background: highlight === state.name ? "#0d1f31" : "transparent",
-                transition: "all 0.15s",
+                display: "flex", gap: 12,
+                padding: "12px 14px 10px",
+                borderRadius: 8,
+                background: highlight === state.name ? "var(--surface)" : "transparent",
+                borderLeft: `3px solid ${highlight === state.name ? state.tierColor : "transparent"}`,
+                transition: "all 0.1s",
                 cursor: "default",
               }}
             >
-              {/* Line 1: rank + state name */}
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 5 }}>
-                <span style={{ fontSize: 11, color: "#4a6a8a", width: 24, textAlign: "right", flexShrink: 0, paddingTop: 2 }}>
-                  {i + 1}
-                </span>
-                <div>
-                  <span style={{ fontSize: 15, fontWeight: 600, color: "#d8eaff", letterSpacing: "-0.01em" }}>
-                    {state.name}
+              <span style={{ fontSize: 11, color: "var(--text3)", width: 22, textAlign: "right", paddingTop: 3, flexShrink: 0 }}>
+                {i + 1}
+              </span>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Name */}
+                <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 2 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{state.name}</span>
+                  {state.note && <span style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>{state.note}</span>}
+                </div>
+
+                {/* US value */}
+                <div style={{ fontSize: 19, fontWeight: 700, color: state.tierColor, marginBottom: 4, lineHeight: 1.2 }}>
+                  {config.format(state.value)}
+                </div>
+
+                {/* EU match */}
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 8px", marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, color: "var(--text2)" }}>
+                    ≈ {state.closest.flag} {state.closest.name}
                   </span>
-                  {state.note && (
-                    <span style={{ fontSize: 11, color: "#5a7a9a", fontStyle: "italic", marginLeft: 6 }}>
-                      ({state.note})
+                  <span style={{ fontSize: 12, color: "var(--text3)" }}>
+                    {config.euFormat(state.closest.value)}
+                  </span>
+                  {state.closest.note && (
+                    <span style={{ fontSize: 11, color: "var(--text3)", fontStyle: "italic" }}>({state.closest.note})</span>
+                  )}
+                  {diffPct !== null && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: isPos ? "#10b981" : "#ef4444",
+                      background: isPos ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+                      padding: "1px 7px", borderRadius: 999,
+                    }}>
+                      {isPos ? "+" : ""}{diffPct}%
                     </span>
                   )}
                 </div>
-              </div>
 
-              {/* Line 2: US value */}
-              <div style={{ paddingLeft: 34, marginBottom: 4 }}>
-                <span style={{ fontSize: 17, fontWeight: 700, color: state.tierColor }}>
-                  {config.format(state.value)}
-                </span>
-              </div>
-
-              {/* Line 3: EU match + diff% */}
-              <div style={{ paddingLeft: 34, marginBottom: 8, display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "2px 8px" }}>
-                <span style={{ fontSize: 13, color: "#8ab0d0" }}>
-                  ≈ {state.closest.flag} {state.closest.name}
-                </span>
-                <span style={{ fontSize: 12, color: "#6a8aaa" }}>
-                  {config.euFormat(state.closest.value)}
-                </span>
-                {state.closest.note && (
-                  <span style={{ fontSize: 11, color: "#5a7a9a", fontStyle: "italic" }}>
-                    ({state.closest.note})
-                  </span>
-                )}
-                {diffPct !== null && (
-                  <span style={{ fontSize: 12, fontWeight: 600, color: diff > 0 ? "#2ecc71" : "#e74c3c" }}>
-                    {diff > 0 ? "+" : ""}{diffPct}%
-                  </span>
-                )}
-              </div>
-
-              {/* Bar tracks */}
-              <div style={{ paddingLeft: 34 }}>
-                <div style={{ position: "relative", height: 6, background: "#0a1825", borderRadius: 3, marginBottom: 3 }}>
-                  <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${barPct}%`, background: state.tierColor, borderRadius: 3, transition: "width 0.3s ease" }} />
-                </div>
-                <div style={{ position: "relative", height: 4, background: "#0a1825", borderRadius: 3 }}>
-                  <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${euBarPct}%`, background: "#2a4a6a", borderRadius: 3, transition: "width 0.3s ease" }} />
+                {/* Bars */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 9, color: "var(--text3)", width: 18, flexShrink: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>US</span>
+                    <div style={{ flex: 1, height: 5, background: "var(--surface3)", borderRadius: 3 }}>
+                      <div style={{ height: "100%", width: `${barPct}%`, background: state.tierColor, borderRadius: 3, transition: "width 0.3s ease" }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 9, color: "var(--text3)", width: 18, flexShrink: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>EU</span>
+                    <div style={{ flex: 1, height: 4, background: "var(--surface3)", borderRadius: 3 }}>
+                      <div style={{ height: "100%", width: `${euBarPct}%`, background: "var(--accent)", borderRadius: 3, opacity: 0.6, transition: "width 0.3s ease" }} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -272,74 +343,71 @@ export default function App() {
         })}
       </div>
 
-      {/* Footer note */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 24px 32px", borderTop: "1px solid #0d1f31" }}>
-        <p style={{ fontSize: 12, color: "#5a8ab0", lineHeight: 1.9, margin: 0 }}>
-          <strong style={{ color: "#7ab0d0" }}>Methodology</strong><br />
-          Each US state is matched to the EU member state whose value is closest (nearest neighbor). The match is recalculated independently per metric — a state may match a different EU member state depending on which metric is selected. Multiple states can match the same EU country.<br /><br />
+      {/* Footer */}
+      <footer style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px 48px", borderTop: "1px solid var(--border2)" }}>
+        <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.9, margin: "0 0 20px" }}>
+          <strong style={{ color: "var(--text2)" }}>Methodology</strong><br />
+          Each US state is matched to the EU member state whose value is closest (nearest neighbor). The match is recalculated independently per metric.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>GDP (PPP) per capita</strong><br />
-          Both US and EU figures are in PPP-adjusted international dollars. US state figures use BEA nominal GDP per capita (BEA, {data.gdp.usYear}); because the US dollar is the reference currency for international dollar PPP calculations, US nominal ≈ PPP. EU figures are IMF WEO PPP GDP per capita ({data.gdp.euYear} estimate). Ireland and Luxembourg are inflated by multinationals booking profits there; DC reflects concentrated federal output relative to a small resident population.<br /><br />
+          <strong style={{ color: "var(--text2)" }}>GDP (PPP) per capita</strong><br />
+          PPP-adjusted international dollars. US: BEA nominal GDP per capita ({data.gdp.usYear}); EU: IMF WEO PPP GDP per capita ({data.gdp.euYear} estimate). Ireland and Luxembourg inflated by multinationals booking profits there.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>Total electricity</strong><br />
-          US figures are total electricity consumption in GWh (EIA State Energy Data System, {data.electricity.year}). EU figures are total final electricity consumption in GWh (Eurostat <em>nrg_cb_e</em>, {data.electricity.year}). Both cover all end-use sectors.<br /><br />
+          <strong style={{ color: "var(--text2)" }}>Total electricity</strong><br />
+          US: EIA State Energy Data System ({data.electricity.year}). EU: Eurostat nrg_cb_e total final electricity consumption ({data.electricity.year}). Both in GWh, all end-use sectors.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>Per capita net income</strong><br />
-          US figures are BEA per capita personal income (gross) with an estimated 22% combined tax deduction (federal ~9%, FICA ~8%, average state ~5%) to approximate net. EU figures are Eurostat mean equivalised net disposable income in PPS from ILC-DI03, converted to USD at approximately 1 PPS = $1.07. EU values use the OECD equivalence scale (adjusts for household size), so they represent income per equivalent adult rather than strict per-capita — slightly higher than a simple per-person average would be.<br /><br />
+          <strong style={{ color: "var(--text2)" }}>Educational attainment</strong><br />
+          % of adults 25–64 with bachelor's degree or higher. US: Census Bureau ACS. EU: Eurostat edat_lfse_03 (ISCED 5–8 tertiary attainment).<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>% difference</strong><br />
-          Calculated as (US state value − EU country value) / EU country value. Positive means the US state's figure exceeds the matched European country's figure.<br /><br />
+          <strong style={{ color: "var(--text2)" }}>High-tech employment</strong><br />
+          US: BLS OES SOC 15-0000 (computer & mathematical occupations) per 1,000 jobs ÷ 10 = % of total employment. EU: Eurostat htec_emp_nat2 (% employed in high-tech manufacturing and knowledge-intensive services). Note: US measures a narrower occupation set than the broader EU sector classification.<br /><br />
 
-          <strong style={{ color: "#7ab0d0" }}>Sources</strong><br />
-          GDP US:{" "}
-          <a href="https://www.bea.gov/data/gdp/gdp-state" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Bureau of Economic Analysis</a>{" "}·{" "}
-          <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_GDP" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia</a><br />
-          GDP EU:{" "}
-          <a href="https://data.imf.org/en/datasets/IMF.RES:WEO" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>IMF World Economic Outlook</a>{" "}·{" "}
-          <a href="https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(PPP)_per_capita" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia</a><br />
-          Electricity US:{" "}
-          <a href="https://www.eia.gov/state/seds/" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>EIA State Energy Data System</a><br />
-          Electricity EU:{" "}
-          <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat nrg_cb_e</a><br />
-          Income US:{" "}
-          <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_income" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Wikipedia · BEA per capita personal income</a><br />
-          Income EU:{" "}
-          <a href="https://ec.europa.eu/eurostat/databrowser/view/ilc_di03" target="_blank" rel="noopener noreferrer" style={{ color: "#4a8ab0" }}>Eurostat ILC-DI03</a>
+          <strong style={{ color: "var(--text2)" }}>Patent applications</strong><br />
+          Per million residents. US: USPTO utility patent applications by state of inventor residence. EU: Eurostat pat_ep_rtot (EPO applications per million inhabitants). Both lag 1–2 years.<br /><br />
+
+          <strong style={{ color: "var(--text2)" }}>% difference</strong><br />
+          (US value − EU value) / EU value. Positive = US state exceeds matched EU country.
         </p>
-      </div>
 
-      {/* Author links */}
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "16px 24px 40px", display: "flex", gap: 16 }}>
-        {[
-          { href: "https://github.com/kerry-tarrant", icon: "fab fa-github" },
-          { href: "https://kerry-tarrant.github.io/", icon: "fas fa-globe" },
-        ].map(({ href, icon }) => (
-          <a
-            key={href}
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "3.5rem",
-              height: "3.5rem",
-              backgroundColor: "#495057",
-              color: "#fff",
-              borderRadius: "100%",
-              fontSize: "1.5rem",
-              textDecoration: "none",
-              transition: "background-color 0.2s ease",
-            }}
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = "#bd5d38"}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = "#495057"}
-          >
-            <i className={icon} />
-          </a>
-        ))}
-      </div>
+        <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.9, margin: "0 0 24px" }}>
+          <strong style={{ color: "var(--text2)" }}>Sources</strong><br />
+          GDP US: <a href="https://www.bea.gov/data/gdp/gdp-state" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Bureau of Economic Analysis</a> · <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_GDP" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Wikipedia</a><br />
+          GDP EU: <a href="https://data.imf.org/en/datasets/IMF.RES:WEO" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>IMF World Economic Outlook</a><br />
+          Electricity US: <a href="https://www.eia.gov/state/seds/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>EIA State Energy Data System</a><br />
+          Electricity EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat nrg_cb_e</a><br />
+          Education US: <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_educational_attainment" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Wikipedia · Census ACS</a><br />
+          Education EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/edat_lfse_03" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat edat_lfse_03</a><br />
+          High-tech US: <a href="https://www.bls.gov/oes/current/oes150000.htm" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>BLS Occupational Employment Statistics</a><br />
+          High-tech EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/htec_emp_nat2" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat htec_emp_nat2</a><br />
+          Patents US: <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_by_patent_activity" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Wikipedia · USPTO</a><br />
+          Patents EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/pat_ep_rtot" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat pat_ep_rtot</a>
+        </p>
 
+        <div style={{ display: "flex", gap: 12 }}>
+          {[
+            { href: "https://github.com/kerry-tarrant", icon: "fab fa-github", label: "GitHub" },
+            { href: "https://kerry-tarrant.github.io/", icon: "fas fa-globe", label: "Website" },
+          ].map(({ href, icon, label }) => (
+            <a
+              key={href}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "7px 14px",
+                background: "var(--surface2)", border: "1px solid var(--border)",
+                borderRadius: 8, color: "var(--text2)", fontSize: 13,
+                textDecoration: "none", transition: "all 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text2)"; }}
+            >
+              <i className={icon} style={{ fontSize: 14 }} />
+              {label}
+            </a>
+          ))}
+        </div>
+      </footer>
     </div>
   );
 }

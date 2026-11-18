@@ -1,10 +1,12 @@
 /**
  * fetch-data.js
  *
- * Fetches three metrics for US states and European countries:
+ * Fetches five metrics for US states and European countries:
  *   1. GDP per capita          — Wikipedia (US) + IMF DataMapper (EU)
  *   2. Total electricity (GWh)  — EIA SEDS HTML table (US) + Eurostat nrg_cb_e (EU)
- *   3. Gross per capita income  — Wikipedia/BEA per capita personal income (US) + Eurostat ilc_di03 (EU)
+ *   3. Educational attainment   — Wikipedia/Census ACS (US) + Eurostat edat_lfse_03 (EU)
+ *   4. High-tech employment     — BLS OES SOC 15-0000 (US) + Eurostat htec_emp_nat2 (EU)
+ *   5. Patent applications/M    — Wikipedia/USPTO (US) + Eurostat pat_ep_rtot (EU)
  *
  * Writes results to src/data.json. No API keys required.
  */
@@ -18,9 +20,6 @@ const __dirname = path.dirname(__filename);
 
 const DATA_PATH = path.join(__dirname, "../src/data.json");
 const RAW_PATH  = path.join(__dirname, "../data");
-
-// PPS → USD conversion rate (approximate; 1 PPS ≈ 1.07 USD as of 2023)
-const PPS_TO_USD = 1.07;
 
 // ─── EU country metadata ────────────────────────────────────────────────────
 
@@ -86,7 +85,6 @@ async function fetchWithRetry(url, retries = 3) {
 /**
  * Parse Eurostat JSON-stat format.
  * Returns a map of { [iso3Code]: { value, year, ...meta } } for the latest available year.
- * preferredDimValues: hint for non-geo/time dimensions (only needed when URL doesn't filter them).
  */
 function parseEurostatData(json, preferredDimValues = {}) {
   const dims    = json.id;
@@ -110,7 +108,6 @@ function parseEurostatData(json, preferredDimValues = {}) {
   const result = {};
 
   for (const [isoCode, meta] of Object.entries(EU_COUNTRY_META)) {
-    // Eurostat uses alpha-2 codes; look up via EUROSTAT_CODE_MAP
     const eurostatCode = EUROSTAT_CODE_MAP[isoCode] ?? isoCode;
     const geoPos = geoCodes[eurostatCode];
     if (geoPos === undefined) continue;
@@ -262,8 +259,6 @@ async function fetchIMF() {
 
 async function fetchEIAElectricity() {
   console.log("Fetching US total electricity (GWh) from EIA SEDS…");
-  // Table row layout: rank | total state (th) | total TWh | per-capita state (th) | per-capita kWh
-  // cells[1] = state name, cells[2] = total TWh → convert × 1000 to get GWh
   const url = "https://www.eia.gov/state/seds/sep_sum/html/rank_es_capita.html";
   const res = await fetchWithRetry(url);
   const html = await res.text();
@@ -277,7 +272,6 @@ async function fetchEIAElectricity() {
     const cells = [...rowMatch[1].matchAll(cellRegex)].map(m => stripTags(m[1]));
     if (cells.length < 5) continue;
 
-    // cells[0] = rank, cells[1] = total state name, cells[2] = total TWh
     const rank  = parseInt(cells[0]);
     if (isNaN(rank) || rank < 1 || rank > 60) continue;
 
@@ -297,7 +291,6 @@ async function fetchEIAElectricity() {
 }
 
 async function fetchEurostatElectricity() {
-  // nrg_cb_e: total final consumption of electricity in GWH per country.
   console.log("Fetching EU total electricity (GWh) from Eurostat nrg_cb_e…");
   const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/nrg_cb_e" +
     "?format=JSON&lang=EN&nrg_bal=FC&siec=E7000&unit=GWH";
@@ -324,117 +317,238 @@ async function fetchEurostatElectricity() {
   return { data: results, year: latestYear };
 }
 
-// ─── Income ───────────────────────────────────────────────────────────────────
+// ─── Education ────────────────────────────────────────────────────────────────
 
-async function fetchWikipediaIncome() {
-  // BEA per capita personal income by state — from the "Per capita personal income by state"
-  // section of the Wikipedia income page (sourced from FRED/BEA).
-  console.log("Fetching US per capita personal income from Wikipedia (BEA/FRED)…");
+async function fetchWikipediaEducation() {
+  console.log("Fetching US educational attainment from Wikipedia…");
   const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
     action: "parse",
-    page: "List_of_U.S._states_and_territories_by_income",
+    page: "List_of_U.S._states_and_territories_by_educational_attainment",
     prop: "wikitext",
     format: "json",
     origin: "*",
   });
-
   const res = await fetchWithRetry(url);
   const json = await res.json();
   const wikitext = json.parse.wikitext["*"];
 
+  const yearMatch = wikitext.match(/(\d{4})[–-](\d{2,4})\s*ACS/i)
+                 || wikitext.match(/ACS\s+(\d{4})/i);
+  const dataYear = yearMatch ? parseInt(yearMatch[1]) : null;
+
+  let bachelorColOffset = 2;
+  const lines = wikitext.split("\n");
+  for (const line of lines) {
+    if (line.startsWith("!") && line.toLowerCase().includes("bachelor")) {
+      const cols = line.split("!!").map(c => c.trim());
+      const idx = cols.findIndex(c => c.toLowerCase().includes("bachelor"));
+      if (idx >= 1) { bachelorColOffset = idx - 1; break; }
+    }
+  }
+
   const results = [];
   const seen = new Set();
-  const lines = wikitext.split("\n");
 
-  // Pass 1: find the exact line range of the "Per capita personal income" section.
-  // Only trigger on lines that ARE headings (start with =) to avoid false matches in body text.
-  let sectionStart = -1;
-  let dataYear = null;
   for (let i = 0; i < lines.length; i++) {
-    const t = lines[i].trim();
-    if (t.startsWith("=") && t.includes("Per capita personal income")) {
-      sectionStart = i + 1;
-      const yearMatch = t.match(/\b(20\d{2})\b/);
-      if (yearMatch) dataYear = parseInt(yearMatch[1]);
-      break;
-    }
-  }
-  if (!dataYear) {
-    const fallback = wikitext.match(/per capita personal income[^\n]*?(\d{4})/i);
-    if (fallback) dataYear = parseInt(fallback[1]);
-  }
-  if (sectionStart < 0) {
-    throw new Error("Wikipedia income: per-capita section not found — page layout may have changed");
-  }
-  let sectionEnd = lines.length;
-  for (let i = sectionStart; i < lines.length; i++) {
-    if (lines[i].trim().startsWith("==")) { sectionEnd = i; break; }
-  }
+    const line = lines[i];
+    const stateMatch = line.match(/^\|\s*(?:\{\{[^}]+\}\}\s*)?\[\[([^\]|]+?)(?:\|[^\]]+)?\]\]/);
+    if (!stateMatch) continue;
 
-  // Pass 2: parse state rows within that section only.
-  for (let i = sectionStart; i < sectionEnd; i++) {
-    const line = lines[i].trim();
-
-    const flagMatch = line.match(/^\|[^|]*\{\{flag\|([^}|]+)\}\}/);
-    const iconMatch = line.match(/^\|\s*\{\{flagicon\|[^}]+\}\}\s*\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/);
-    let stateName = null;
-    if (flagMatch)      stateName = flagMatch[1].trim();
-    else if (iconMatch) stateName = iconMatch[1].trim();
-    if (!stateName) continue;
-
-    stateName = stateName
-      .replace("Washington, D.C.", "District of Columbia")
+    let stateName = stateMatch[1]
       .replace("Washington (state)", "Washington")
+      .replace("Washington, D.C.", "District of Columbia")
+      .replace(" (state)", "")
       .trim();
-
     if (stateName === "United States" || seen.has(stateName)) continue;
 
-    // The 2023 value is on the next line as |$XXX,XXX (or |'''$XXX,XXX''')
-    let value = 0;
-    for (let j = i + 1; j <= Math.min(i + 3, sectionEnd - 1); j++) {
-      const m = lines[j].match(/\$\s*([\d,]+)/);
-      if (m) {
-        const n = parseInt(m[1].replace(/,/g, ""));
-        if (n > 20000 && n < 200000) { value = n; break; }
-      }
-    }
-    if (!value) continue;
+    const cells = line.split("||").slice(1).map(c => c.replace(/'''|<[^>]+>/g, "").trim());
+    let pct = null;
 
+    if (cells.length > bachelorColOffset) {
+      const v = parseFloat(cells[bachelorColOffset]);
+      if (v >= 15 && v <= 75) pct = v;
+    }
+
+    if (pct === null) {
+      const allVals = cells.map(c => parseFloat(c)).filter(v => !isNaN(v) && v >= 10 && v <= 100);
+      allVals.sort((a, b) => b - a);
+      if (allVals.length >= 3) pct = allVals[2];
+      else if (allVals.length === 2) pct = allVals[1];
+    }
+
+    if (pct === null || pct < 15 || pct > 75) continue;
     seen.add(stateName);
-    results.push({ name: stateName, value });
+    results.push({ name: stateName, value: Math.round(pct * 10) / 10 });
   }
 
-  if (results.length < 45) throw new Error(`Wikipedia income: only parsed ${results.length} entries`);
-
-  // Apply ~22% combined tax deduction to convert gross BEA income to approximate net.
-  results.forEach(r => { r.value = Math.round(r.value * 0.78); });
+  if (results.length < 45) throw new Error(`Wikipedia education: only ${results.length} entries`);
   results.sort((a, b) => b.value - a.value);
-  console.log(`Wikipedia per capita income: ${results.length} states/territories. Year: ${dataYear}`);
-  return { data: results, year: dataYear };
+  console.log(`Wikipedia education: ${results.length} states. Year: ${dataYear}`);
+  return { data: results, year: dataYear || 2022 };
 }
 
-async function fetchEurostatIncome() {
-  // ilc_di03: mean equivalised net disposable income in PPS.
-  // Mean (not median) pairs better with BEA per-capita personal income (a mean measure).
-  console.log("Fetching EU mean equivalised income from Eurostat ilc_di03…");
-  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ilc_di03" +
-    "?format=JSON&lang=EN&indic_il=MEAN_EI&unit=PPS&age=TOTAL&sex=T";
+async function fetchEurostatEducation() {
+  console.log("Fetching EU educational attainment from Eurostat edat_lfse_03…");
+  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/edat_lfse_03" +
+    "?format=JSON&lang=EN&isced11=ED5-8&age=Y25-64&sex=T";
   const res = await fetchWithRetry(url);
   const json = await res.json();
-
   const rawData = parseEurostatData(json);
-
   const results = [];
   let latestYear = 0;
-
   for (const [isoCode, entry] of Object.entries(rawData)) {
-    const usd = Math.round(entry.value * PPS_TO_USD);
+    if (entry.value < 1 || entry.value > 100) continue;
     if (entry.year > latestYear) latestYear = entry.year;
-    results.push({ ...EU_COUNTRY_META[isoCode], value: usd });
+    results.push({ ...EU_COUNTRY_META[isoCode], value: Math.round(entry.value * 10) / 10 });
+  }
+  results.sort((a, b) => b.value - a.value);
+  console.log(`Eurostat education: ${results.length} countries. Year: ${latestYear}`);
+  return { data: results, year: latestYear };
+}
+
+// ─── High-tech employment ─────────────────────────────────────────────────────
+
+async function fetchBLSHightech() {
+  console.log("Fetching US high-tech employment from BLS OES (SOC 15-0000)…");
+  const url = "https://www.bls.gov/oes/current/oes150000.htm";
+  const res = await fetchWithRetry(url);
+  const html = await res.text();
+
+  const results = [];
+  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+  const strip = s => s.replace(/<[^>]+>/g, "").replace(/&nbsp;|&#160;/g, " ").replace(/[*†]/g, "").trim();
+
+  for (const row of html.matchAll(rowRegex)) {
+    const cells = [...row[1].matchAll(cellRegex)].map(m => strip(m[1]));
+    if (cells.length < 4) continue;
+    const name = cells[0];
+    if (!name || name.length < 4 || !/^[A-Z]/.test(name)) continue;
+    if (name.toLowerCase().includes("area") || name === "United States" || name.includes("(")) continue;
+
+    for (let j = 2; j < Math.min(cells.length, 8); j++) {
+      const v = parseFloat(cells[j].replace(/,/g, ""));
+      if (!isNaN(v) && v >= 2 && v <= 150) {
+        results.push({ name, value: Math.round((v / 10) * 10) / 10 });
+        break;
+      }
+    }
   }
 
+  if (results.length < 40) throw new Error(`BLS hightech: only ${results.length} states`);
   results.sort((a, b) => b.value - a.value);
-  console.log(`Eurostat income: ${results.length} countries. Year: ${latestYear}`);
+  console.log(`BLS hightech: ${results.length} states`);
+  return results;
+}
+
+async function fetchEurostatHightech() {
+  console.log("Fetching EU high-tech employment from Eurostat htec_emp_nat2…");
+  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/htec_emp_nat2" +
+    "?format=JSON&lang=EN&unit=PC_EMP";
+  const res = await fetchWithRetry(url);
+  const json = await res.json();
+  const rawData = parseEurostatData(json);
+  const results = [];
+  let latestYear = 0;
+  for (const [isoCode, entry] of Object.entries(rawData)) {
+    if (entry.value < 0.1 || entry.value > 50) {
+      console.warn(`Eurostat hightech: implausible value for ${isoCode}: ${entry.value}`);
+      continue;
+    }
+    if (entry.year > latestYear) latestYear = entry.year;
+    results.push({ ...EU_COUNTRY_META[isoCode], value: Math.round(entry.value * 10) / 10 });
+  }
+  results.sort((a, b) => b.value - a.value);
+  console.log(`Eurostat hightech: ${results.length} countries. Year: ${latestYear}`);
+  return { data: results, year: latestYear };
+}
+
+// ─── Patents ──────────────────────────────────────────────────────────────────
+
+async function fetchWikipediaPatents() {
+  console.log("Fetching US patent data from Wikipedia…");
+  const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
+    action: "parse",
+    page: "List_of_U.S._states_by_patent_activity",
+    prop: "wikitext",
+    format: "json",
+    origin: "*",
+  });
+  const res = await fetchWithRetry(url);
+  const json = await res.json();
+  if (json.error) throw new Error(`Wikipedia: ${json.error.info}`);
+  const wikitext = json.parse.wikitext["*"];
+
+  const yearMatch = wikitext.match(/patent[^0-9]*(\d{4})/i);
+  const dataYear = yearMatch ? parseInt(yearMatch[1]) : null;
+
+  let perMillionCol = -1;
+  const lines = wikitext.split("\n");
+  for (const line of lines) {
+    if (line.startsWith("!") && (line.toLowerCase().includes("million") || line.toLowerCase().includes("per mil"))) {
+      const cols = line.split("!!").map(c => c.trim());
+      const idx = cols.findIndex(c => c.toLowerCase().includes("million") || c.toLowerCase().includes("per mil"));
+      if (idx >= 1) { perMillionCol = idx - 1; break; }
+    }
+  }
+
+  const results = [];
+  const seen = new Set();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const stateMatch = line.match(/^\|\s*(?:\{\{[^}]+\}\}\s*)?\[\[([^\]|]+?)(?:\|[^\]]+)?\]\]/);
+    if (!stateMatch) continue;
+
+    let stateName = stateMatch[1]
+      .replace("Washington (state)", "Washington")
+      .replace(" (state)", "")
+      .trim();
+    if (stateName === "United States" || seen.has(stateName)) continue;
+
+    const cells = line.split("||").slice(1).map(c => c.replace(/'''|<[^>]+>|,/g, "").trim());
+    let perMillion = null;
+
+    if (perMillionCol >= 0 && cells.length > perMillionCol) {
+      const v = parseFloat(cells[perMillionCol]);
+      if (v >= 1 && v <= 10000) perMillion = v;
+    }
+
+    if (perMillion === null) {
+      const vals = cells.map(c => parseFloat(c)).filter(v => !isNaN(v) && v >= 10 && v <= 5000);
+      if (vals.length > 0) perMillion = vals[0];
+    }
+
+    if (perMillion === null) continue;
+    seen.add(stateName);
+    results.push({ name: stateName, value: Math.round(perMillion) });
+  }
+
+  if (results.length < 40) throw new Error(`Wikipedia patents: only ${results.length} states`);
+  results.sort((a, b) => b.value - a.value);
+  console.log(`Wikipedia patents: ${results.length} states. Year: ${dataYear}`);
+  return { data: results, year: dataYear || 2020 };
+}
+
+async function fetchEurostatPatents() {
+  console.log("Fetching EU patent applications from Eurostat pat_ep_rtot…");
+  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/pat_ep_rtot" +
+    "?format=JSON&lang=EN&unit=P_MHAB";
+  const res = await fetchWithRetry(url);
+  const json = await res.json();
+  const rawData = parseEurostatData(json);
+  const results = [];
+  let latestYear = 0;
+  for (const [isoCode, entry] of Object.entries(rawData)) {
+    if (entry.value < 0 || entry.value > 10000) {
+      console.warn(`Eurostat patents: implausible value for ${isoCode}: ${entry.value}`);
+      continue;
+    }
+    if (entry.year > latestYear) latestYear = entry.year;
+    results.push({ ...EU_COUNTRY_META[isoCode], value: Math.round(entry.value * 10) / 10 });
+  }
+  results.sort((a, b) => b.value - a.value);
+  console.log(`Eurostat patents: ${results.length} countries. Year: ${latestYear}`);
   return { data: results, year: latestYear };
 }
 
@@ -467,17 +581,35 @@ async function main() {
     console.error("Electricity fetch failed — keeping existing data:", err.message);
   }
 
-  // ── Income ────────────────────────────────────────────────────────────────
-  let incomeData = existing.income ?? { us: [], eu: [], usYear: null, euYear: null };
+  // ── Education ─────────────────────────────────────────────────────────────
+  let educationData = existing.education ?? { us: [], eu: [], usYear: null, euYear: null };
   try {
-    const [usIncome, euIncome] = await Promise.all([fetchWikipediaIncome(), fetchEurostatIncome()]);
-    incomeData = { us: usIncome.data, eu: euIncome.data, usYear: usIncome.year ?? 2023, euYear: euIncome.year };
+    const [usEdu, euEdu] = await Promise.all([fetchWikipediaEducation(), fetchEurostatEducation()]);
+    educationData = { us: usEdu.data, eu: euEdu.data, usYear: usEdu.year, euYear: euEdu.year };
   } catch (err) {
-    console.error("Income fetch failed — keeping existing data:", err.message);
+    console.error("Education fetch failed — keeping existing data:", err.message);
+  }
+
+  // ── High-tech employment ──────────────────────────────────────────────────
+  let hightechData = existing.hightech ?? { us: [], eu: [], year: null };
+  try {
+    const [usHt, euHt] = await Promise.all([fetchBLSHightech(), fetchEurostatHightech()]);
+    hightechData = { us: usHt, eu: euHt.data, year: euHt.year };
+  } catch (err) {
+    console.error("High-tech fetch failed — keeping existing data:", err.message);
+  }
+
+  // ── Patents ───────────────────────────────────────────────────────────────
+  let patentsData = existing.patents ?? { us: [], eu: [], year: null };
+  try {
+    const [usPat, euPat] = await Promise.all([fetchWikipediaPatents(), fetchEurostatPatents()]);
+    patentsData = { us: usPat.data, eu: euPat.data, year: euPat.year };
+  } catch (err) {
+    console.error("Patents fetch failed — keeping existing data:", err.message);
   }
 
   // ── Write data.json ───────────────────────────────────────────────────────
-  const output = { gdp: gdpData, electricity: electricityData, income: incomeData };
+  const output = { gdp: gdpData, electricity: electricityData, education: educationData, hightech: hightechData, patents: patentsData };
   fs.writeFileSync(DATA_PATH, JSON.stringify(output, null, 2), "utf8");
   console.log("Wrote src/data.json");
 
