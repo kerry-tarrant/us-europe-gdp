@@ -324,9 +324,9 @@ async function fetchEurostatElectricity() {
 async function fetchCensusEducation() {
   // Try Census ACS API (multiple year/table variants), fall back to Wikipedia
   const censusUrls = [
-    ["https://api.census.gov/data/2022/acs/acs5/subject?get=S1501_C02_015E,NAME&for=state:*", 2022],
-    ["https://api.census.gov/data/2021/acs/acs5/subject?get=S1501_C02_015E,NAME&for=state:*", 2021],
-    ["https://api.census.gov/data/2022/acs/acs5/profile?get=DP02_0067PE,NAME&for=state:*",   2022],
+    ["https://api.census.gov/data/2022/acs/acs5/subject?get=S1501_C02_015E,NAME&for=state:*&key=DEMO_KEY", 2022],
+    ["https://api.census.gov/data/2021/acs/acs5/subject?get=S1501_C02_015E,NAME&for=state:*&key=DEMO_KEY", 2021],
+    ["https://api.census.gov/data/2022/acs/acs5/profile?get=DP02_0067PE,NAME&for=state:*&key=DEMO_KEY",   2022],
   ];
 
   for (const [url, year] of censusUrls) {
@@ -362,13 +362,14 @@ async function fetchCensusEducation() {
 }
 
 async function fetchWikipediaEducation() {
-  console.log("Fetching US educational attainment from Wikipedia…");
   const pageTitles = [
     "List_of_U.S._states_and_territories_by_educational_attainment",
     "Educational_attainment_in_the_United_States",
+    "List_of_U.S._states_by_educational_attainment",
   ];
   let wikitext = null;
   for (const page of pageTitles) {
+    console.log(`Fetching US educational attainment from Wikipedia (${page})…`);
     const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
       action: "parse", page, prop: "wikitext", format: "json", origin: "*",
     });
@@ -379,36 +380,67 @@ async function fetchWikipediaEducation() {
   }
   if (!wikitext) throw new Error("Wikipedia education: no page found");
 
-  // Find the column header for bachelor's degree
+  // Debug: log table header area to understand format
+  const tblIdx = wikitext.indexOf("{|");
+  if (tblIdx >= 0) console.log("Table preview:", JSON.stringify(wikitext.slice(tblIdx, tblIdx + 400)));
+
+  const US_STATES = new Set([
+    "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut",
+    "Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa",
+    "Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan",
+    "Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire",
+    "New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio",
+    "Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota",
+    "Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia",
+    "Wisconsin","Wyoming","District of Columbia",
+  ]);
+
+  // Split by table row separators
+  const rows = wikitext.split(/^[ \t]*\|-/m);
+
+  // Find bachelor's column index from header rows
   let bachelorsCol = -1;
-  const lines = wikitext.split("\n");
-  for (const line of lines) {
-    if (!line.startsWith("!")) continue;
-    const cols = line.split("!!").map(c => c.replace(/['[\]{}|]/g, "").trim().toLowerCase());
-    const idx = cols.findIndex(c => c.includes("bachelor") || (c.includes("college") && c.includes("higher")));
-    if (idx >= 0) { bachelorsCol = idx; break; }
+  for (const row of rows) {
+    if (!row.includes("!")) continue;
+    const headers = row.split(/!!|\n!/).map(h =>
+      h.replace(/\{\{[^}]+\}\}/g, "").replace(/['[\]|!]/g, "").trim().toLowerCase()
+    );
+    const idx = headers.findIndex(h => h.includes("bachelor") || (h.includes("4") && h.includes("year")));
+    if (idx >= 0) { bachelorsCol = idx; console.log("Bachelor's col:", idx, "→", headers[idx]); break; }
   }
 
   const results = [];
   const seen = new Set();
-  for (const line of lines) {
-    const stateMatch = line.match(/^\|\s*(?:\{\{[^}]+\}\}\s*)?\[\[([^\]|]+?)(?:\|[^\]]+)?\]\]/);
-    if (!stateMatch) continue;
-    let name = stateMatch[1].replace("Washington (state)", "Washington").replace(" (state)", "").trim();
-    if (name === "United States" || seen.has(name)) continue;
-    const cells = line.split("||").map(c => c.replace(/[,''']/g, "").replace(/<[^>]+>/g, "").trim());
-    let pct = null;
-    if (bachelorsCol >= 0 && cells.length > bachelorsCol) {
-      pct = parseFloat(cells[bachelorsCol]);
-    }
-    if ((pct == null || isNaN(pct) || pct < 10 || pct > 85)) {
-      const vals = cells.map(c => parseFloat(c)).filter(v => !isNaN(v) && v >= 15 && v <= 70);
-      if (vals.length > 0) pct = vals[0];
-    }
-    if (pct == null || isNaN(pct)) continue;
-    seen.add(name);
-    results.push({ name, value: Math.round(pct * 10) / 10 });
+
+  for (const row of rows) {
+    // Find wikilinks in this row
+    const links = [...row.matchAll(/\[\[([^\]|]+?)(?:\|[^\]]+)?\]\]/g)].map(m => m[1].replace(" (state)", "").trim());
+    const stateName = links.find(n => US_STATES.has(n));
+    if (!stateName || seen.has(stateName)) continue;
+
+    // Extract numeric values from this row (handle || inline and newline-per-cell formats)
+    const rawCells = row.split(/\|\||^\|/m).slice(1);  // remove first element (before first |)
+    const vals = rawCells.map(c => {
+      // Strip templates, keeping their numeric arguments
+      const stripped = c
+        .replace(/\{\{[^|{}]+\|([\d.]+)[^}]*\}\}/g, "$1")
+        .replace(/\{\{[^}]+\}\}/g, "")
+        .replace(/<[^>]+>/g, "")
+        .replace(/[,%'']/g, "")
+        .trim();
+      return parseFloat(stripped);
+    }).filter(v => !isNaN(v) && v >= 15 && v <= 75);
+
+    if (vals.length === 0) continue;
+
+    // Pick the value at bachelorsCol, else take the last value in plausible range
+    let pct = (bachelorsCol >= 0 && vals[bachelorsCol] != null) ? vals[bachelorsCol] : vals[vals.length - 1];
+    if (isNaN(pct)) continue;
+
+    seen.add(stateName);
+    results.push({ name: stateName, value: Math.round(pct * 10) / 10 });
   }
+
   if (results.length < 40) throw new Error(`Wikipedia education: only ${results.length} states`);
   results.sort((a, b) => b.value - a.value);
   console.log(`Wikipedia education: ${results.length} states`);
@@ -439,8 +471,8 @@ async function fetchEurostatEducation() {
 async function fetchCensusHightech() {
   // Try Census ACS DP03 — % computer, engineering, and science occupations
   const censusUrls = [
-    ["https://api.census.gov/data/2022/acs/acs5/profile?get=DP03_0028PE,NAME&for=state:*", 2022],
-    ["https://api.census.gov/data/2021/acs/acs5/profile?get=DP03_0028PE,NAME&for=state:*", 2021],
+    ["https://api.census.gov/data/2022/acs/acs5/profile?get=DP03_0028PE,NAME&for=state:*&key=DEMO_KEY", 2022],
+    ["https://api.census.gov/data/2021/acs/acs5/profile?get=DP03_0028PE,NAME&for=state:*&key=DEMO_KEY", 2021],
   ];
 
   for (const [url, year] of censusUrls) {
@@ -475,34 +507,101 @@ async function fetchCensusHightech() {
 }
 
 async function fetchEurostatHightech() {
-  // isoc_sk_dskl_i21: ICT specialist employment as % of total employed, by country
-  console.log("Fetching EU ICT specialist employment from Eurostat isoc_sk_dskl_i21…");
-  // Add geo filter for all 27 EU member states to avoid HTTP 413 (response too large)
   const euGeoCodes = Object.keys(EU_COUNTRY_META)
     .map(iso3 => EUROSTAT_CODE_MAP[iso3] ?? iso3)
     .map(code => `geo=${code}`)
     .join("&");
-  const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/isoc_sk_dskl_i21" +
-    `?format=JSON&lang=EN&unit=PC_EMP&sex=T&age=Y15_74&${euGeoCodes}`;
-  const res = await fetchWithRetry(url);
-  const json = await res.json();
-  const rawData = parseEurostatData(json);
-  const results = [];
-  let latestYear = 0;
-  for (const [isoCode, entry] of Object.entries(rawData)) {
-    if (entry.value < 0.5 || entry.value > 25) {
-      console.warn(`Eurostat ICT: implausible value for ${isoCode}: ${entry.value}`);
-      continue;
+
+  // Try multiple Eurostat datasets for EU ICT/hightech employment
+  const datasets = [
+    // isoc_sk_dskl_i21 with indic_is filter to get just the ICT-specialist indicator
+    `https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/isoc_sk_dskl_i21?format=JSON&lang=EN&unit=PC_EMP&sex=T&age=Y15_74&indic_is=P_ICTSP&${euGeoCodes}`,
+    // htec_emp_nat2: high-tech sectors employment as % of total (HT_HTC = high-tech total)
+    `https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/htec_emp_nat2?format=JSON&lang=EN&unit=PC_EMP&nace_r2=HT_HTC&sex=T&age=Y15_74&${euGeoCodes}`,
+    // htec_emp_nat2 without age filter (wider compatibility)
+    `https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/htec_emp_nat2?format=JSON&lang=EN&unit=PC_EMP&nace_r2=HT_HTC&sex=T&${euGeoCodes}`,
+  ];
+
+  for (const url of datasets) {
+    const datasetName = url.match(/data\/([^?]+)/)[1];
+    try {
+      console.log(`Fetching EU hightech from Eurostat ${datasetName}…`);
+      const res = await fetchWithRetry(url);
+      const json = await res.json();
+      const rawData = parseEurostatData(json);
+      const results = [];
+      let latestYear = 0;
+      for (const [isoCode, entry] of Object.entries(rawData)) {
+        if (entry.value < 0.3 || entry.value > 30) {
+          console.warn(`Eurostat hightech: implausible ${isoCode}: ${entry.value}`);
+          continue;
+        }
+        if (entry.year > latestYear) latestYear = entry.year;
+        results.push({ ...EU_COUNTRY_META[isoCode], value: Math.round(entry.value * 10) / 10 });
+      }
+      if (results.length >= 20) {
+        results.sort((a, b) => b.value - a.value);
+        console.log(`Eurostat hightech (${datasetName}): ${results.length} countries. Year: ${latestYear}`);
+        return { data: results, year: latestYear };
+      }
+      console.warn(`Eurostat hightech: only ${results.length} countries from ${datasetName}`);
+    } catch (err) {
+      console.warn(`Eurostat hightech ${datasetName} failed: ${err.message}`);
     }
-    if (entry.year > latestYear) latestYear = entry.year;
-    results.push({ ...EU_COUNTRY_META[isoCode], value: Math.round(entry.value * 10) / 10 });
   }
-  results.sort((a, b) => b.value - a.value);
-  console.log(`Eurostat ICT hightech: ${results.length} countries. Year: ${latestYear}`);
-  return { data: results, year: latestYear };
+  throw new Error("Eurostat hightech: all datasets failed");
 }
 
 // ─── Patents ──────────────────────────────────────────────────────────────────
+
+// US state populations (2020 Census) for per-million calculation
+const US_STATE_POPULATION = {
+  "Alabama":5024279,"Alaska":733391,"Arizona":7151502,"Arkansas":3011524,"California":39538223,
+  "Colorado":5773714,"Connecticut":3605944,"Delaware":989948,"District of Columbia":689545,
+  "Florida":21538187,"Georgia":10711908,"Hawaii":1455271,"Idaho":1839106,"Illinois":12812508,
+  "Indiana":6785528,"Iowa":3190369,"Kansas":2937880,"Kentucky":4505836,"Louisiana":4657757,
+  "Maine":1362359,"Maryland":6177224,"Massachusetts":7029917,"Michigan":10077331,"Minnesota":5706494,
+  "Mississippi":2961279,"Missouri":6154913,"Montana":1084225,"Nebraska":1961504,"Nevada":3104614,
+  "New Hampshire":1377529,"New Jersey":9288994,"New Mexico":2117522,"New York":20201249,
+  "North Carolina":10439388,"North Dakota":779094,"Ohio":11799448,"Oklahoma":3959353,
+  "Oregon":4237256,"Pennsylvania":13002700,"Rhode Island":1097379,"South Carolina":5118425,
+  "South Dakota":886667,"Tennessee":6910840,"Texas":29145505,"Utah":3271616,"Vermont":643077,
+  "Virginia":8631393,"Washington":7705281,"West Virginia":1793716,"Wisconsin":5893718,"Wyoming":576851,
+};
+
+async function fetchUSPatentsUSPTO() {
+  // USPTO Patent Technology Monitoring Team — state counts table
+  console.log("Fetching US patent data from USPTO PTMT…");
+  const url = "https://www.uspto.gov/web/offices/ac/ido/oeip/taf/stateall.htm";
+  const res = await fetchWithRetry(url, 2, BROWSER_UA);
+  const html = await res.text();
+
+  const stripTags = s => s.replace(/<[^>]+>/g, "").replace(/&nbsp;|&#160;/g, " ").trim();
+  const rowRegex  = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+
+  const stateTotals = {};
+  for (const rowMatch of html.matchAll(rowRegex)) {
+    const cells = [...rowMatch[1].matchAll(cellRegex)].map(m => stripTags(m[1]));
+    if (cells.length < 3) continue;
+    const name = cells[0].replace(/\*/g, "").trim();
+    if (!US_STATE_POPULATION[name]) continue;
+    // Try to find the total patent count column (usually last numeric column)
+    const nums = cells.slice(1).map(c => parseInt(c.replace(/,/g, ""))).filter(n => !isNaN(n) && n > 0);
+    if (nums.length === 0) continue;
+    stateTotals[name] = nums[nums.length - 1]; // last year total
+  }
+
+  if (Object.keys(stateTotals).length < 40) throw new Error(`USPTO: only ${Object.keys(stateTotals).length} states`);
+
+  const results = Object.entries(stateTotals).map(([name, count]) => {
+    const pop = US_STATE_POPULATION[name];
+    return { name, value: Math.round(count / pop * 1_000_000) };
+  }).filter(r => r.value > 0);
+  results.sort((a, b) => b.value - a.value);
+  console.log(`USPTO patents: ${results.length} states`);
+  return { data: results, year: 2022 };
+}
 
 async function fetchWikipediaPatents() {
   console.log("Fetching US patent data from Wikipedia…");
@@ -511,18 +610,20 @@ async function fetchWikipediaPatents() {
     "List_of_U.S._states_by_patent_activity",
     "Patent_activity_in_the_United_States",
     "List_of_U.S._states_by_innovation",
+    "Research_and_development_in_the_United_States",
   ];
 
-  // Also search Wikipedia to find the right page
+  // Full-text search to find the right page
   try {
     const searchUrl = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
-      action: "opensearch", search: "US states patent activity per million", limit: "10", format: "json", origin: "*",
+      action: "query", list: "search", srsearch: "US states patent per million", srlimit: "10",
+      format: "json", origin: "*",
     });
     const sres = await fetchWithRetry(searchUrl, 2);
-    const [, titles] = await sres.json();
-    for (const t of titles) {
-      if (t.toLowerCase().includes("state") && t.toLowerCase().includes("patent")) {
-        const slug = t.replace(/ /g, "_");
+    const json = await sres.json();
+    for (const item of (json?.query?.search ?? [])) {
+      if (item.title.toLowerCase().includes("patent") && item.title.toLowerCase().includes("state")) {
+        const slug = item.title.replace(/ /g, "_");
         if (!pageTitles.includes(slug)) pageTitles.push(slug);
       }
     }
@@ -666,7 +767,14 @@ async function main() {
   // ── Patents ───────────────────────────────────────────────────────────────
   let patentsData = existing.patents ?? { us: [], eu: [], year: null };
   try {
-    const [usPat, euPat] = await Promise.all([fetchWikipediaPatents(), fetchEurostatPatents()]);
+    const euPat = await fetchEurostatPatents();
+    let usPat;
+    try {
+      usPat = await fetchUSPatentsUSPTO();
+    } catch (err) {
+      console.warn("USPTO patents failed, trying Wikipedia:", err.message);
+      usPat = await fetchWikipediaPatents();
+    }
     patentsData = { us: usPat.data, eu: euPat.data, year: euPat.year };
   } catch (err) {
     console.error("Patents fetch failed — keeping existing data:", err.message);
