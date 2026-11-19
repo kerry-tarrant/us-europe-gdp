@@ -50,16 +50,16 @@ const METRIC_CONFIG = {
   hightech: {
     label: "High-tech",
     fullLabel: "High-tech employment",
-    subtitle: () => `BLS OES · Eurostat${data.hightech?.year ? ` ${data.hightech.year}` : ""}`,
-    desc: "Share of workforce in computer, mathematical, and high-tech knowledge sectors. US: BLS OES computer & mathematical occupations (SOC 15-0000) per 1,000 jobs ÷ 10. EU: Eurostat htec_emp_nat2 (high-tech manufacturing and knowledge-intensive services).",
+    subtitle: () => `Census ACS 2022 · Eurostat${data.hightech?.year ? ` ${data.hightech.year}` : ""}`,
+    desc: "Share of workforce in STEM/ICT sectors. US: Census ACS 5-year 2022 — computer, engineering, and science occupations as % of civilian employed (DP03). EU: Eurostat isoc_sk_dskl_i21 — ICT specialist employment as % of employed. Note: US measures a broader STEM category than the EU's narrower ICT-specialist definition.",
     format: v => `${v}%`,
     euFormat: v => `${v}%`,
     tiers: [
-      { min: 8, color: "#f59e0b", label: ">8%" },
-      { min: 5, color: "#10b981", label: "5–8%" },
-      { min: 3, color: "#3b82f6", label: "3–5%" },
-      { min: 1, color: "#f97316", label: "1–3%" },
-      { min: 0, color: "#ef4444", label: "<1%" },
+      { min: 15, color: "#f59e0b", label: ">15%" },
+      { min: 10, color: "#10b981", label: "10–15%" },
+      { min: 7,  color: "#3b82f6", label: "7–10%" },
+      { min: 4,  color: "#f97316", label: "4–7%" },
+      { min: 0,  color: "#ef4444", label: "<4%" },
     ],
   },
   patents: {
@@ -359,7 +359,7 @@ export default function App() {
           % of adults 25–64 with bachelor's degree or higher. US: Census Bureau ACS. EU: Eurostat edat_lfse_03 (ISCED 5–8 tertiary attainment).<br /><br />
 
           <strong style={{ color: "var(--text2)" }}>High-tech employment</strong><br />
-          US: BLS OES SOC 15-0000 (computer & mathematical occupations) per 1,000 jobs ÷ 10 = % of total employment. EU: Eurostat htec_emp_nat2 (% employed in high-tech manufacturing and knowledge-intensive services). Note: US measures a narrower occupation set than the broader EU sector classification.<br /><br />
+          US: Census ACS 5-year 2022, computer, engineering, and science occupations (DP03_0028PE) as % of civilian employed. EU: Eurostat isoc_sk_dskl_i21, ICT specialist employment as % of employed, ages 15–74. Note: US covers a broader STEM category than the EU's narrower ICT-specialist definition — comparisons show relative rankings within each side, not absolute equivalence.<br /><br />
 
           <strong style={{ color: "var(--text2)" }}>Patent applications</strong><br />
           Per million residents. US: USPTO utility patent applications by state of inventor residence. EU: Eurostat pat_ep_rtot (EPO applications per million inhabitants). Both lag 1–2 years.<br /><br />
@@ -376,8 +376,8 @@ export default function App() {
           Electricity EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/nrg_cb_e" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat nrg_cb_e</a><br />
           Education US: <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_and_territories_by_educational_attainment" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Wikipedia · Census ACS</a><br />
           Education EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/edat_lfse_03" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat edat_lfse_03</a><br />
-          High-tech US: <a href="https://www.bls.gov/oes/current/oes150000.htm" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>BLS Occupational Employment Statistics</a><br />
-          High-tech EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/htec_emp_nat2" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat htec_emp_nat2</a><br />
+          High-tech US: <a href="https://www.census.gov/acs/www/data/data-tables-and-tools/subject-tables/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Census Bureau ACS Subject Table S1501 / DP03</a><br />
+          High-tech EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/isoc_sk_dskl_i21" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat isoc_sk_dskl_i21</a><br />
           Patents US: <a href="https://en.wikipedia.org/wiki/List_of_U.S._states_by_patent_activity" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Wikipedia · USPTO</a><br />
           Patents EU: <a href="https://ec.europa.eu/eurostat/databrowser/view/pat_ep_rtot" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>Eurostat pat_ep_rtot</a>
         </p>
