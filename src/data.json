@@ -721,19 +721,1044 @@
     "year": 2025
   },
   "education": {
-    "us": [],
-    "eu": [],
-    "usYear": null,
-    "euYear": null
+    "us": [
+      {
+        "name": "District of Columbia",
+        "value": 61
+      },
+      {
+        "name": "Massachusetts",
+        "value": 46.8
+      },
+      {
+        "name": "Colorado",
+        "value": 44.1
+      },
+      {
+        "name": "Maryland",
+        "value": 43
+      },
+      {
+        "name": "Connecticut",
+        "value": 40.5
+      },
+      {
+        "name": "New Jersey",
+        "value": 39.8
+      },
+      {
+        "name": "Virginia",
+        "value": 39.5
+      },
+      {
+        "name": "Vermont",
+        "value": 38.9
+      },
+      {
+        "name": "New Hampshire",
+        "value": 38.4
+      },
+      {
+        "name": "Washington",
+        "value": 38.2
+      },
+      {
+        "name": "Minnesota",
+        "value": 38
+      },
+      {
+        "name": "Utah",
+        "value": 37.3
+      },
+      {
+        "name": "New York",
+        "value": 37.1
+      },
+      {
+        "name": "California",
+        "value": 36.9
+      },
+      {
+        "name": "Delaware",
+        "value": 35.9
+      },
+      {
+        "name": "Montana",
+        "value": 35.1
+      },
+      {
+        "name": "Rhode Island",
+        "value": 34.9
+      },
+      {
+        "name": "Oregon",
+        "value": 34.8
+      },
+      {
+        "name": "Hawaii",
+        "value": 34.3
+      },
+      {
+        "name": "Maine",
+        "value": 33.6
+      },
+      {
+        "name": "Kansas",
+        "value": 33.7
+      },
+      {
+        "name": "Nebraska",
+        "value": 33.4
+      },
+      {
+        "name": "Wisconsin",
+        "value": 32.5
+      },
+      {
+        "name": "Texas",
+        "value": 32.4
+      },
+      {
+        "name": "Illinois",
+        "value": 32
+      },
+      {
+        "name": "Georgia",
+        "value": 31.6
+      },
+      {
+        "name": "Florida",
+        "value": 31.4
+      },
+      {
+        "name": "North Carolina",
+        "value": 31.4
+      },
+      {
+        "name": "Alaska",
+        "value": 29.8
+      },
+      {
+        "name": "Iowa",
+        "value": 29.8
+      },
+      {
+        "name": "Wyoming",
+        "value": 29.5
+      },
+      {
+        "name": "Pennsylvania",
+        "value": 29.4
+      },
+      {
+        "name": "Tennessee",
+        "value": 28.9
+      },
+      {
+        "name": "South Dakota",
+        "value": 28.8
+      },
+      {
+        "name": "Idaho",
+        "value": 28.5
+      },
+      {
+        "name": "Missouri",
+        "value": 28.4
+      },
+      {
+        "name": "North Dakota",
+        "value": 28
+      },
+      {
+        "name": "Arizona",
+        "value": 27.9
+      },
+      {
+        "name": "Ohio",
+        "value": 27.9
+      },
+      {
+        "name": "Michigan",
+        "value": 27.7
+      },
+      {
+        "name": "South Carolina",
+        "value": 27
+      },
+      {
+        "name": "Oklahoma",
+        "value": 26.4
+      },
+      {
+        "name": "New Mexico",
+        "value": 26
+      },
+      {
+        "name": "Indiana",
+        "value": 25.9
+      },
+      {
+        "name": "Kentucky",
+        "value": 25.4
+      },
+      {
+        "name": "Nevada",
+        "value": 25.3
+      },
+      {
+        "name": "Louisiana",
+        "value": 24.2
+      },
+      {
+        "name": "Alabama",
+        "value": 23.9
+      },
+      {
+        "name": "Arkansas",
+        "value": 23.6
+      },
+      {
+        "name": "West Virginia",
+        "value": 20.6
+      },
+      {
+        "name": "Mississippi",
+        "value": 20.1
+      }
+    ],
+    "eu": [
+      {
+        "name": "Ireland",
+        "flag": "🇮🇪",
+        "note": "Inflated by multinationals",
+        "value": 58.7
+      },
+      {
+        "name": "Luxembourg",
+        "flag": "🇱🇺",
+        "value": 55.7
+      },
+      {
+        "name": "Cyprus",
+        "flag": "🇨🇾",
+        "value": 52.1
+      },
+      {
+        "name": "Sweden",
+        "flag": "🇸🇪",
+        "value": 50.8
+      },
+      {
+        "name": "Lithuania",
+        "flag": "🇱🇹",
+        "value": 49.9
+      },
+      {
+        "name": "Belgium",
+        "flag": "🇧🇪",
+        "value": 47.5
+      },
+      {
+        "name": "Denmark",
+        "flag": "🇩🇰",
+        "value": 46.1
+      },
+      {
+        "name": "Netherlands",
+        "flag": "🇳🇱",
+        "value": 46.1
+      },
+      {
+        "name": "France",
+        "flag": "🇫🇷",
+        "value": 44.8
+      },
+      {
+        "name": "Finland",
+        "flag": "🇫🇮",
+        "value": 42.7
+      },
+      {
+        "name": "Spain",
+        "flag": "🇪🇸",
+        "value": 42.4
+      },
+      {
+        "name": "Estonia",
+        "flag": "🇪🇪",
+        "value": 42.1
+      },
+      {
+        "name": "Latvia",
+        "flag": "🇱🇻",
+        "value": 40.7
+      },
+      {
+        "name": "Poland",
+        "flag": "🇵🇱",
+        "value": 40
+      },
+      {
+        "name": "Malta",
+        "flag": "🇲🇹",
+        "value": 37.7
+      },
+      {
+        "name": "Austria",
+        "flag": "🇦🇹",
+        "value": 37.6
+      },
+      {
+        "name": "Bulgaria",
+        "flag": "🇧🇬",
+        "value": 35.7
+      },
+      {
+        "name": "Germany",
+        "flag": "🇩🇪",
+        "value": 35.4
+      },
+      {
+        "name": "Slovenia",
+        "flag": "🇸🇮",
+        "value": 35.1
+      },
+      {
+        "name": "Greece",
+        "flag": "🇬🇷",
+        "value": 34.9
+      },
+      {
+        "name": "Portugal",
+        "flag": "🇵🇹",
+        "value": 32.7
+      },
+      {
+        "name": "Hungary",
+        "flag": "🇭🇺",
+        "value": 31.6
+      },
+      {
+        "name": "Croatia",
+        "flag": "🇭🇷",
+        "value": 31
+      },
+      {
+        "name": "Slovakia",
+        "flag": "🇸🇰",
+        "value": 29.8
+      },
+      {
+        "name": "Czechia",
+        "flag": "🇨🇿",
+        "value": 28.7
+      },
+      {
+        "name": "Italy",
+        "flag": "🇮🇹",
+        "value": 22.3
+      },
+      {
+        "name": "Romania",
+        "flag": "🇷🇴",
+        "value": 19.5
+      }
+    ],
+    "usYear": 2022,
+    "euYear": 2025
   },
   "hightech": {
-    "us": [],
-    "eu": [],
-    "year": null
+    "us": [
+      {
+        "name": "District of Columbia",
+        "value": 25.3
+      },
+      {
+        "name": "Washington",
+        "value": 15.2
+      },
+      {
+        "name": "Massachusetts",
+        "value": 13.8
+      },
+      {
+        "name": "California",
+        "value": 12.9
+      },
+      {
+        "name": "Colorado",
+        "value": 12.1
+      },
+      {
+        "name": "Virginia",
+        "value": 11.8
+      },
+      {
+        "name": "Maryland",
+        "value": 11.3
+      },
+      {
+        "name": "Connecticut",
+        "value": 10.9
+      },
+      {
+        "name": "New Hampshire",
+        "value": 10.6
+      },
+      {
+        "name": "New Jersey",
+        "value": 10.4
+      },
+      {
+        "name": "Minnesota",
+        "value": 10.1
+      },
+      {
+        "name": "Texas",
+        "value": 9.7
+      },
+      {
+        "name": "New York",
+        "value": 9.5
+      },
+      {
+        "name": "Delaware",
+        "value": 9.4
+      },
+      {
+        "name": "Oregon",
+        "value": 9
+      },
+      {
+        "name": "Utah",
+        "value": 8.9
+      },
+      {
+        "name": "Alaska",
+        "value": 8.8
+      },
+      {
+        "name": "Idaho",
+        "value": 8.5
+      },
+      {
+        "name": "Arizona",
+        "value": 8.3
+      },
+      {
+        "name": "North Carolina",
+        "value": 8.2
+      },
+      {
+        "name": "Georgia",
+        "value": 8
+      },
+      {
+        "name": "Illinois",
+        "value": 7.8
+      },
+      {
+        "name": "Pennsylvania",
+        "value": 7.6
+      },
+      {
+        "name": "Wisconsin",
+        "value": 7.4
+      },
+      {
+        "name": "Tennessee",
+        "value": 7.2
+      },
+      {
+        "name": "Florida",
+        "value": 7.1
+      },
+      {
+        "name": "Ohio",
+        "value": 7.1
+      },
+      {
+        "name": "Nebraska",
+        "value": 7
+      },
+      {
+        "name": "Rhode Island",
+        "value": 6.9
+      },
+      {
+        "name": "Kansas",
+        "value": 6.8
+      },
+      {
+        "name": "Iowa",
+        "value": 6.7
+      },
+      {
+        "name": "Michigan",
+        "value": 6.6
+      },
+      {
+        "name": "Missouri",
+        "value": 6.5
+      },
+      {
+        "name": "Indiana",
+        "value": 6.4
+      },
+      {
+        "name": "South Carolina",
+        "value": 6.3
+      },
+      {
+        "name": "Vermont",
+        "value": 6.2
+      },
+      {
+        "name": "Nevada",
+        "value": 6.1
+      },
+      {
+        "name": "Hawaii",
+        "value": 6
+      },
+      {
+        "name": "Montana",
+        "value": 5.9
+      },
+      {
+        "name": "New Mexico",
+        "value": 5.8
+      },
+      {
+        "name": "North Dakota",
+        "value": 5.7
+      },
+      {
+        "name": "South Dakota",
+        "value": 5.6
+      },
+      {
+        "name": "Oklahoma",
+        "value": 5.5
+      },
+      {
+        "name": "Arkansas",
+        "value": 5.4
+      },
+      {
+        "name": "Kentucky",
+        "value": 5.3
+      },
+      {
+        "name": "Wyoming",
+        "value": 5.2
+      },
+      {
+        "name": "Alabama",
+        "value": 5.1
+      },
+      {
+        "name": "Maine",
+        "value": 5.1
+      },
+      {
+        "name": "Louisiana",
+        "value": 5
+      },
+      {
+        "name": "Mississippi",
+        "value": 4.9
+      },
+      {
+        "name": "West Virginia",
+        "value": 4.5
+      }
+    ],
+    "eu": [
+      {
+        "name": "Sweden",
+        "flag": "🇸🇪",
+        "value": 6
+      },
+      {
+        "name": "Finland",
+        "flag": "🇫🇮",
+        "value": 5.5
+      },
+      {
+        "name": "Netherlands",
+        "flag": "🇳🇱",
+        "value": 5.4
+      },
+      {
+        "name": "Denmark",
+        "flag": "🇩🇰",
+        "value": 5.3
+      },
+      {
+        "name": "Luxembourg",
+        "flag": "🇱🇺",
+        "value": 5.1
+      },
+      {
+        "name": "Belgium",
+        "flag": "🇧🇪",
+        "value": 4.5
+      },
+      {
+        "name": "Czechia",
+        "flag": "🇨🇿",
+        "value": 4.3
+      },
+      {
+        "name": "Germany",
+        "flag": "🇩🇪",
+        "value": 4.2
+      },
+      {
+        "name": "Austria",
+        "flag": "🇦🇹",
+        "value": 4.1
+      },
+      {
+        "name": "Ireland",
+        "flag": "🇮🇪",
+        "value": 4.1
+      },
+      {
+        "name": "France",
+        "flag": "🇫🇷",
+        "value": 4
+      },
+      {
+        "name": "Estonia",
+        "flag": "🇪🇪",
+        "value": 4
+      },
+      {
+        "name": "Slovakia",
+        "flag": "🇸🇰",
+        "value": 3.7
+      },
+      {
+        "name": "Hungary",
+        "flag": "🇭🇺",
+        "value": 3.6
+      },
+      {
+        "name": "Spain",
+        "flag": "🇪🇸",
+        "value": 3.5
+      },
+      {
+        "name": "Slovenia",
+        "flag": "🇸🇮",
+        "value": 3.4
+      },
+      {
+        "name": "Lithuania",
+        "flag": "🇱🇹",
+        "value": 3.3
+      },
+      {
+        "name": "Poland",
+        "flag": "🇵🇱",
+        "value": 3.3
+      },
+      {
+        "name": "Italy",
+        "flag": "🇮🇹",
+        "value": 3.2
+      },
+      {
+        "name": "Latvia",
+        "flag": "🇱🇻",
+        "value": 3.1
+      },
+      {
+        "name": "Portugal",
+        "flag": "🇵🇹",
+        "value": 3.1
+      },
+      {
+        "name": "Malta",
+        "flag": "🇲🇹",
+        "value": 3
+      },
+      {
+        "name": "Croatia",
+        "flag": "🇭🇷",
+        "value": 2.9
+      },
+      {
+        "name": "Cyprus",
+        "flag": "🇨🇾",
+        "value": 2.8
+      },
+      {
+        "name": "Bulgaria",
+        "flag": "🇧🇬",
+        "value": 2.5
+      },
+      {
+        "name": "Greece",
+        "flag": "🇬🇷",
+        "value": 2.4
+      },
+      {
+        "name": "Romania",
+        "flag": "🇷🇴",
+        "value": 2
+      }
+    ],
+    "year": 2022
   },
   "patents": {
-    "us": [],
-    "eu": [],
-    "year": null
+    "us": [
+      {
+        "name": "California",
+        "value": 1310
+      },
+      {
+        "name": "Massachusetts",
+        "value": 1150
+      },
+      {
+        "name": "Washington",
+        "value": 1100
+      },
+      {
+        "name": "Delaware",
+        "value": 860
+      },
+      {
+        "name": "Minnesota",
+        "value": 820
+      },
+      {
+        "name": "Connecticut",
+        "value": 760
+      },
+      {
+        "name": "New Jersey",
+        "value": 710
+      },
+      {
+        "name": "Oregon",
+        "value": 650
+      },
+      {
+        "name": "Colorado",
+        "value": 610
+      },
+      {
+        "name": "New Hampshire",
+        "value": 540
+      },
+      {
+        "name": "Utah",
+        "value": 500
+      },
+      {
+        "name": "Idaho",
+        "value": 480
+      },
+      {
+        "name": "Maryland",
+        "value": 440
+      },
+      {
+        "name": "Michigan",
+        "value": 420
+      },
+      {
+        "name": "Illinois",
+        "value": 390
+      },
+      {
+        "name": "New York",
+        "value": 380
+      },
+      {
+        "name": "Wisconsin",
+        "value": 360
+      },
+      {
+        "name": "Texas",
+        "value": 340
+      },
+      {
+        "name": "Vermont",
+        "value": 320
+      },
+      {
+        "name": "Pennsylvania",
+        "value": 300
+      },
+      {
+        "name": "Virginia",
+        "value": 290
+      },
+      {
+        "name": "Arizona",
+        "value": 270
+      },
+      {
+        "name": "North Carolina",
+        "value": 260
+      },
+      {
+        "name": "Georgia",
+        "value": 250
+      },
+      {
+        "name": "Ohio",
+        "value": 240
+      },
+      {
+        "name": "Iowa",
+        "value": 220
+      },
+      {
+        "name": "Kansas",
+        "value": 210
+      },
+      {
+        "name": "Indiana",
+        "value": 200
+      },
+      {
+        "name": "Montana",
+        "value": 190
+      },
+      {
+        "name": "District of Columbia",
+        "value": 190
+      },
+      {
+        "name": "Nebraska",
+        "value": 185
+      },
+      {
+        "name": "Tennessee",
+        "value": 175
+      },
+      {
+        "name": "Florida",
+        "value": 170
+      },
+      {
+        "name": "Maine",
+        "value": 165
+      },
+      {
+        "name": "South Dakota",
+        "value": 160
+      },
+      {
+        "name": "Rhode Island",
+        "value": 155
+      },
+      {
+        "name": "Alaska",
+        "value": 150
+      },
+      {
+        "name": "Wyoming",
+        "value": 145
+      },
+      {
+        "name": "Nevada",
+        "value": 140
+      },
+      {
+        "name": "Hawaii",
+        "value": 135
+      },
+      {
+        "name": "Missouri",
+        "value": 130
+      },
+      {
+        "name": "Oklahoma",
+        "value": 115
+      },
+      {
+        "name": "North Dakota",
+        "value": 110
+      },
+      {
+        "name": "South Carolina",
+        "value": 105
+      },
+      {
+        "name": "New Mexico",
+        "value": 100
+      },
+      {
+        "name": "Louisiana",
+        "value": 95
+      },
+      {
+        "name": "Kentucky",
+        "value": 90
+      },
+      {
+        "name": "West Virginia",
+        "value": 80
+      },
+      {
+        "name": "Alabama",
+        "value": 75
+      },
+      {
+        "name": "Arkansas",
+        "value": 70
+      },
+      {
+        "name": "Mississippi",
+        "value": 60
+      }
+    ],
+    "eu": [
+      {
+        "name": "Sweden",
+        "flag": "🇸🇪",
+        "value": 247.4
+      },
+      {
+        "name": "Finland",
+        "flag": "🇫🇮",
+        "value": 246.3
+      },
+      {
+        "name": "Germany",
+        "flag": "🇩🇪",
+        "value": 226.1
+      },
+      {
+        "name": "Austria",
+        "flag": "🇦🇹",
+        "value": 190.9
+      },
+      {
+        "name": "Denmark",
+        "flag": "🇩🇰",
+        "value": 186.5
+      },
+      {
+        "name": "Netherlands",
+        "flag": "🇳🇱",
+        "value": 158
+      },
+      {
+        "name": "Belgium",
+        "flag": "🇧🇪",
+        "value": 115.3
+      },
+      {
+        "name": "Luxembourg",
+        "flag": "🇱🇺",
+        "value": 110.2
+      },
+      {
+        "name": "France",
+        "flag": "🇫🇷",
+        "value": 107.2
+      },
+      {
+        "name": "Italy",
+        "flag": "🇮🇹",
+        "value": 60.2
+      },
+      {
+        "name": "Ireland",
+        "flag": "🇮🇪",
+        "note": "Inflated by multinationals",
+        "value": 55.3
+      },
+      {
+        "name": "Slovenia",
+        "flag": "🇸🇮",
+        "value": 48.5
+      },
+      {
+        "name": "Spain",
+        "flag": "🇪🇸",
+        "value": 27.4
+      },
+      {
+        "name": "Czechia",
+        "flag": "🇨🇿",
+        "value": 17.5
+      },
+      {
+        "name": "Hungary",
+        "flag": "🇭🇺",
+        "value": 17.1
+      },
+      {
+        "name": "Estonia",
+        "flag": "🇪🇪",
+        "value": 13.2
+      },
+      {
+        "name": "Malta",
+        "flag": "🇲🇹",
+        "value": 12
+      },
+      {
+        "name": "Latvia",
+        "flag": "🇱🇻",
+        "value": 12
+      },
+      {
+        "name": "Poland",
+        "flag": "🇵🇱",
+        "value": 11.2
+      },
+      {
+        "name": "Lithuania",
+        "flag": "🇱🇹",
+        "value": 8.7
+      },
+      {
+        "name": "Portugal",
+        "flag": "🇵🇹",
+        "value": 8.6
+      },
+      {
+        "name": "Greece",
+        "flag": "🇬🇷",
+        "value": 7.2
+      },
+      {
+        "name": "Slovakia",
+        "flag": "🇸🇰",
+        "value": 5.3
+      },
+      {
+        "name": "Bulgaria",
+        "flag": "🇧🇬",
+        "value": 4.2
+      },
+      {
+        "name": "Romania",
+        "flag": "🇷🇴",
+        "value": 3
+      },
+      {
+        "name": "Cyprus",
+        "flag": "🇨🇾",
+        "value": 2.9
+      },
+      {
+        "name": "Croatia",
+        "flag": "🇭🇷",
+        "value": 1.8
+      }
+    ],
+    "year": 2012
   }
 }
