@@ -67,10 +67,10 @@ const EUROSTAT_CODE_MAP = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async function fetchWithRetry(url, retries = 3) {
+async function fetchWithRetry(url, retries = 3, options = {}) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, options);
       if (!res.ok) throw new Error(`HTTP ${res.status} from ${url}`);
       return res;
     } catch (err) {
@@ -81,6 +81,8 @@ async function fetchWithRetry(url, retries = 3) {
     }
   }
 }
+
+const BROWSER_UA = { headers: { "User-Agent": "Mozilla/5.0 (compatible; DataFetcher/1.0)" } };
 
 /**
  * Parse Eurostat JSON-stat format.
@@ -320,27 +322,97 @@ async function fetchEurostatElectricity() {
 // ─── Education ────────────────────────────────────────────────────────────────
 
 async function fetchCensusEducation() {
-  // ACS 5-year 2022, subject table S1501 — % with bachelor's degree or higher, population 25+
-  console.log("Fetching US educational attainment from Census ACS S1501…");
-  const url = "https://api.census.gov/data/2022/acs/acs5/subject" +
-    "?get=S1501_C02_015E,NAME&for=state:*";
-  const res = await fetchWithRetry(url);
-  const rows = await res.json();
-  // rows[0] = header ["S1501_C02_015E","NAME","state"]
-  // rows[1..] = [pct_string, state_name, fips_code]
+  // Try Census ACS API (multiple year/table variants), fall back to Wikipedia
+  const censusUrls = [
+    ["https://api.census.gov/data/2022/acs/acs5/subject?get=S1501_C02_015E,NAME&for=state:*", 2022],
+    ["https://api.census.gov/data/2021/acs/acs5/subject?get=S1501_C02_015E,NAME&for=state:*", 2021],
+    ["https://api.census.gov/data/2022/acs/acs5/profile?get=DP02_0067PE,NAME&for=state:*",   2022],
+  ];
 
-  const results = [];
-  for (let i = 1; i < rows.length; i++) {
-    const pct  = parseFloat(rows[i][0]);
-    const name = rows[i][1];
-    if (isNaN(pct) || pct < 10 || pct > 85) continue;
-    results.push({ name, value: Math.round(pct * 10) / 10 });
+  for (const [url, year] of censusUrls) {
+    try {
+      console.log(`Fetching US educational attainment from Census ACS (${year})…`);
+      const res = await fetchWithRetry(url, 2, BROWSER_UA);
+      const text = await res.text();
+      if (!text.trim().startsWith("[")) {
+        console.warn("Census education: non-JSON response, skipping");
+        continue;
+      }
+      const rows = JSON.parse(text);
+      const results = [];
+      for (let i = 1; i < rows.length; i++) {
+        const pct = parseFloat(rows[i][0]);
+        const name = rows[i][1];
+        if (isNaN(pct) || pct < 10 || pct > 85) continue;
+        results.push({ name, value: Math.round(pct * 10) / 10 });
+      }
+      if (results.length >= 45) {
+        results.sort((a, b) => b.value - a.value);
+        console.log(`Census ACS education: ${results.length} states. Year: ${year}`);
+        return { data: results, year };
+      }
+      console.warn(`Census education: only ${results.length} states from ${url}`);
+    } catch (err) {
+      console.warn(`Census education attempt failed: ${err.message}`);
+    }
   }
 
-  if (results.length < 45) throw new Error(`Census education: only ${results.length} states`);
+  // Fallback: Wikipedia educational attainment page
+  return fetchWikipediaEducation();
+}
+
+async function fetchWikipediaEducation() {
+  console.log("Fetching US educational attainment from Wikipedia…");
+  const pageTitles = [
+    "List_of_U.S._states_and_territories_by_educational_attainment",
+    "Educational_attainment_in_the_United_States",
+  ];
+  let wikitext = null;
+  for (const page of pageTitles) {
+    const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
+      action: "parse", page, prop: "wikitext", format: "json", origin: "*",
+    });
+    const res = await fetchWithRetry(url, 2);
+    const json = await res.json();
+    if (!json.error) { wikitext = json.parse.wikitext["*"]; break; }
+    console.warn(`Wikipedia education: page "${page}" not found`);
+  }
+  if (!wikitext) throw new Error("Wikipedia education: no page found");
+
+  // Find the column header for bachelor's degree
+  let bachelorsCol = -1;
+  const lines = wikitext.split("\n");
+  for (const line of lines) {
+    if (!line.startsWith("!")) continue;
+    const cols = line.split("!!").map(c => c.replace(/['[\]{}|]/g, "").trim().toLowerCase());
+    const idx = cols.findIndex(c => c.includes("bachelor") || (c.includes("college") && c.includes("higher")));
+    if (idx >= 0) { bachelorsCol = idx; break; }
+  }
+
+  const results = [];
+  const seen = new Set();
+  for (const line of lines) {
+    const stateMatch = line.match(/^\|\s*(?:\{\{[^}]+\}\}\s*)?\[\[([^\]|]+?)(?:\|[^\]]+)?\]\]/);
+    if (!stateMatch) continue;
+    let name = stateMatch[1].replace("Washington (state)", "Washington").replace(" (state)", "").trim();
+    if (name === "United States" || seen.has(name)) continue;
+    const cells = line.split("||").map(c => c.replace(/[,''']/g, "").replace(/<[^>]+>/g, "").trim());
+    let pct = null;
+    if (bachelorsCol >= 0 && cells.length > bachelorsCol) {
+      pct = parseFloat(cells[bachelorsCol]);
+    }
+    if ((pct == null || isNaN(pct) || pct < 10 || pct > 85)) {
+      const vals = cells.map(c => parseFloat(c)).filter(v => !isNaN(v) && v >= 15 && v <= 70);
+      if (vals.length > 0) pct = vals[0];
+    }
+    if (pct == null || isNaN(pct)) continue;
+    seen.add(name);
+    results.push({ name, value: Math.round(pct * 10) / 10 });
+  }
+  if (results.length < 40) throw new Error(`Wikipedia education: only ${results.length} states`);
   results.sort((a, b) => b.value - a.value);
-  console.log(`Census ACS education: ${results.length} states. Year: 2022`);
-  return { data: results, year: 2022 };
+  console.log(`Wikipedia education: ${results.length} states`);
+  return { data: results, year: 2023 };
 }
 
 async function fetchEurostatEducation() {
@@ -365,33 +437,53 @@ async function fetchEurostatEducation() {
 // ─── High-tech employment ─────────────────────────────────────────────────────
 
 async function fetchCensusHightech() {
-  // ACS 5-year 2022, data profile DP03 — % computer, engineering, and science occupations
-  console.log("Fetching US STEM employment from Census ACS DP03…");
-  const url = "https://api.census.gov/data/2022/acs/acs5/profile" +
-    "?get=DP03_0028PE,NAME&for=state:*";
-  const res = await fetchWithRetry(url);
-  const rows = await res.json();
-  // rows[0] = header, rows[1..] = [pct_string, state_name, fips]
+  // Try Census ACS DP03 — % computer, engineering, and science occupations
+  const censusUrls = [
+    ["https://api.census.gov/data/2022/acs/acs5/profile?get=DP03_0028PE,NAME&for=state:*", 2022],
+    ["https://api.census.gov/data/2021/acs/acs5/profile?get=DP03_0028PE,NAME&for=state:*", 2021],
+  ];
 
-  const results = [];
-  for (let i = 1; i < rows.length; i++) {
-    const pct  = parseFloat(rows[i][0]);
-    const name = rows[i][1];
-    if (isNaN(pct) || pct < 0.5 || pct > 30) continue;
-    results.push({ name, value: Math.round(pct * 10) / 10 });
+  for (const [url, year] of censusUrls) {
+    try {
+      console.log(`Fetching US STEM employment from Census ACS DP03 (${year})…`);
+      const res = await fetchWithRetry(url, 2, BROWSER_UA);
+      const text = await res.text();
+      if (!text.trim().startsWith("[")) {
+        console.warn("Census hightech: non-JSON response, skipping");
+        continue;
+      }
+      const rows = JSON.parse(text);
+      const results = [];
+      for (let i = 1; i < rows.length; i++) {
+        const pct = parseFloat(rows[i][0]);
+        const name = rows[i][1];
+        if (isNaN(pct) || pct < 0.5 || pct > 30) continue;
+        results.push({ name, value: Math.round(pct * 10) / 10 });
+      }
+      if (results.length >= 40) {
+        results.sort((a, b) => b.value - a.value);
+        console.log(`Census ACS hightech: ${results.length} states. Year: ${year}`);
+        return results;
+      }
+      console.warn(`Census hightech: only ${results.length} states from ${url}`);
+    } catch (err) {
+      console.warn(`Census hightech attempt failed: ${err.message}`);
+    }
   }
 
-  if (results.length < 40) throw new Error(`Census hightech: only ${results.length} states`);
-  results.sort((a, b) => b.value - a.value);
-  console.log(`Census ACS hightech: ${results.length} states`);
-  return results;
+  throw new Error("Census hightech: all sources failed");
 }
 
 async function fetchEurostatHightech() {
   // isoc_sk_dskl_i21: ICT specialist employment as % of total employed, by country
   console.log("Fetching EU ICT specialist employment from Eurostat isoc_sk_dskl_i21…");
+  // Add geo filter for all 27 EU member states to avoid HTTP 413 (response too large)
+  const euGeoCodes = Object.keys(EU_COUNTRY_META)
+    .map(iso3 => EUROSTAT_CODE_MAP[iso3] ?? iso3)
+    .map(code => `geo=${code}`)
+    .join("&");
   const url = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/isoc_sk_dskl_i21" +
-    "?format=JSON&lang=EN&unit=PC_EMP&sex=T&age=Y15_74";
+    `?format=JSON&lang=EN&unit=PC_EMP&sex=T&age=Y15_74&${euGeoCodes}`;
   const res = await fetchWithRetry(url);
   const json = await res.json();
   const rawData = parseEurostatData(json);
@@ -414,18 +506,36 @@ async function fetchEurostatHightech() {
 
 async function fetchWikipediaPatents() {
   console.log("Fetching US patent data from Wikipedia…");
-  // Try multiple possible page titles
   const pageTitles = [
     "List_of_U.S._states_and_territories_by_patent_activity",
     "List_of_U.S._states_by_patent_activity",
+    "Patent_activity_in_the_United_States",
+    "List_of_U.S._states_by_innovation",
   ];
+
+  // Also search Wikipedia to find the right page
+  try {
+    const searchUrl = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
+      action: "opensearch", search: "US states patent activity per million", limit: "10", format: "json", origin: "*",
+    });
+    const sres = await fetchWithRetry(searchUrl, 2);
+    const [, titles] = await sres.json();
+    for (const t of titles) {
+      if (t.toLowerCase().includes("state") && t.toLowerCase().includes("patent")) {
+        const slug = t.replace(/ /g, "_");
+        if (!pageTitles.includes(slug)) pageTitles.push(slug);
+      }
+    }
+  } catch (err) {
+    console.warn("Wikipedia patent search failed:", err.message);
+  }
 
   let json = null;
   for (const page of pageTitles) {
     const url = "https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
       action: "parse", page, prop: "wikitext", format: "json", origin: "*",
     });
-    const res = await fetchWithRetry(url);
+    const res = await fetchWithRetry(url, 2);
     const candidate = await res.json();
     if (!candidate.error) { json = candidate; break; }
     console.warn(`Wikipedia patents: page "${page}" not found, trying next…`);
